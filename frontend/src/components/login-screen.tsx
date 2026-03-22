@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Brand } from "@/components/kinetic";
-import { getDashboardPath, loginUser } from "@/lib/auth";
+import { getDashboardPath, getSession, loginUser } from "@/lib/auth";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -12,6 +12,13 @@ export function LoginScreen() {
   const next = searchParams.get("next");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const session = getSession();
+    if (session) {
+      router.replace(next || getDashboardPath(session.role));
+    }
+  }, [next, router]);
 
   async function handleSubmit(formData: FormData) {
     setSubmitting(true);
@@ -34,7 +41,7 @@ export function LoginScreen() {
       return;
     }
 
-    router.push(next || getDashboardPath(result.user.role));
+    router.replace(next || getDashboardPath(result.user.role));
   }
 
   return (
@@ -103,7 +110,7 @@ export function LoginScreen() {
 
             <p className="mt-6 text-center text-sm text-zinc-500">
               Ainda nao tem conta?{" "}
-              <Link href="/cadastro/vencedor" className="font-semibold text-primary">
+              <Link href="/cadastro" className="font-semibold text-primary">
                 Criar cadastro
               </Link>
             </p>

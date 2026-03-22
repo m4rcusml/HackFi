@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { clearSession, getDashboardPath, getSession, UserRole } from "@/lib/auth";
 
 type NavItem = {
   href: string;
@@ -11,6 +15,10 @@ type SideItem = {
   label: string;
   icon: string;
 };
+
+function formatWallet(value: string) {
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
+}
 
 export function Brand() {
   return (
@@ -26,16 +34,89 @@ export function Brand() {
 export function TopNav({
   active,
   actionLabel = "Conectar carteira",
+  actionHref = "/marketplace",
+  authHref = "/login",
+  authLabel = "Entrar",
 }: {
   active?: string;
   actionLabel?: string;
+  actionHref?: string;
+  authHref?: string;
+  authLabel?: string;
 }) {
-  const items: NavItem[] = [
-    { href: "/", label: "Ecossistema" },
-    { href: "/marketplace", label: "Premios" },
-    { href: "/investor", label: "Investidores" },
-    { href: "/admin", label: "Administracao" },
-  ];
+  const router = useRouter();
+  const [sessionName, setSessionName] = useState("");
+  const [sessionRole, setSessionRole] = useState<UserRole | null>(null);
+  const [sessionHref, setSessionHref] = useState(authHref);
+  const [wallet, setWallet] = useState("");
+
+  useEffect(() => {
+    const sync = async () => {
+      const session = getSession();
+      setSessionName(session?.name || "");
+      setSessionRole(session?.role || null);
+      setSessionHref(session ? getDashboardPath(session.role) : authHref);
+
+      const ethereum = window.ethereum;
+      if (!ethereum) {
+        setWallet("");
+        return;
+      }
+
+      const accounts = (await ethereum.request({ method: "eth_accounts" })) as string[];
+      setWallet(accounts[0] || "");
+    };
+
+    void sync();
+
+    const handleSession = () => {
+      void sync();
+    };
+
+    const handleAccounts = (accounts: string[]) => {
+      setWallet(accounts[0] || "");
+    };
+
+    window.addEventListener("hackfi-session-changed", handleSession);
+    window.addEventListener("storage", handleSession);
+    window.ethereum?.on("accountsChanged", handleAccounts);
+
+    return () => {
+      window.removeEventListener("hackfi-session-changed", handleSession);
+      window.removeEventListener("storage", handleSession);
+      window.ethereum?.removeListener("accountsChanged", handleAccounts);
+    };
+  }, [authHref]);
+
+  const resolvedAuthLabel = useMemo(() => sessionName || authLabel, [authLabel, sessionName]);
+  const resolvedAuthHref = useMemo(() => sessionHref || authHref, [authHref, sessionHref]);
+  const items: NavItem[] = useMemo(() => {
+    if (sessionRole === "investidor") {
+      return [
+        { href: "/investor", label: "Meu painel" },
+        { href: "/marketplace", label: "Marketplace" },
+      ];
+    }
+
+    if (sessionRole === "vencedor") {
+      return [{ href: "/winner", label: "Minha antecipacao" }];
+    }
+
+    if (sessionRole === "admin") {
+      return [{ href: "/admin", label: "Operacoes" }];
+    }
+
+    return [
+      { href: "/", label: "Ecossistema" },
+      { href: "/marketplace", label: "Premios" },
+      { href: "/cadastro", label: "Perfis" },
+    ];
+  }, [sessionRole]);
+
+  const handleLogout = () => {
+    clearSession();
+    router.replace("/");
+  };
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#131313]/80 backdrop-blur-xl">
@@ -59,14 +140,27 @@ export function TopNav({
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          {wallet ? (
+            <span className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-300 sm:inline-flex">
+              {formatWallet(wallet)}
+            </span>
+          ) : null}
           <Link
-            href="/"
+            href={resolvedAuthHref}
             className="hidden text-sm font-medium text-on-surface transition-colors hover:text-primary sm:inline-flex"
           >
-            Entrar
+            {resolvedAuthLabel}
           </Link>
+          {sessionName ? (
+            <button
+              onClick={handleLogout}
+              className="hidden rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition-colors hover:bg-white/10 sm:inline-flex"
+            >
+              Sair
+            </button>
+          ) : null}
           <Link
-            href="/marketplace"
+            href={actionHref}
             className="rounded-xl bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-5 py-2.5 font-headline text-sm font-bold text-white transition-transform active:scale-95"
           >
             {actionLabel}
@@ -94,7 +188,7 @@ export function Footer() {
           ))}
         </div>
         <p className="border-t border-white/5 pt-6 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-700">
-          2024 MONAD KINETIC. Construido para o vazio.
+          2024 MONAD KINETIC. Construido para antecipacao de premios.
         </p>
       </div>
     </footer>
@@ -321,5 +415,15 @@ export function Icon({
       return <svg {...props}><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 12h10" /><path d="M7 9h3" /></svg>;
     default:
       return <svg {...props}><circle cx="12" cy="12" r="8" /></svg>;
+  }
+}
+
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      on: (event: string, listener: (...args: never[]) => void) => void;
+      removeListener: (event: string, listener: (...args: never[]) => void) => void;
+    };
   }
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getDashboardPath, getSession, UserRole } from "@/lib/auth";
+import { getDashboardPath, getSession, SessionUser, UserRole } from "@/lib/auth";
 
 export function ProtectedRoute({
   allowedRole,
@@ -13,9 +13,17 @@ export function ProtectedRoute({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const session = getSession();
+  const [hydrated, setHydrated] = useState(false);
+  const [session, setSession] = useState<SessionUser | null>(null);
 
   useEffect(() => {
+    setSession(getSession());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
     if (!session) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
       return;
@@ -24,9 +32,9 @@ export function ProtectedRoute({
     if (session.role !== allowedRole) {
       router.replace(getDashboardPath(session.role));
     }
-  }, [allowedRole, pathname, router, session]);
+  }, [allowedRole, hydrated, pathname, router, session]);
 
-  if (!session || session.role !== allowedRole) {
+  if (!hydrated || !session || session.role !== allowedRole) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-zinc-400">
         Validando sessao...

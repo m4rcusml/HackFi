@@ -1,86 +1,162 @@
-import Link from "next/link";
-import { Chip, Footer, Icon, TopNav } from "@/components/kinetic";
+"use client";
 
-const pathCards = [
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Chip, Footer, Icon, TopNav } from "@/components/kinetic";
+import { getDashboardPath, getSession } from "@/lib/auth";
+
+const flowCards = [
   {
-    title: "Investidor",
-    text: "Acesse tokens de premio com desconto e receba rendimento de nivel institucional em recompensas verificadas.",
-    cta: "Entrar como investidor",
-    href: "/cadastro/investidor",
-    icon: "monitoring",
-  },
-  {
-    title: "Vencedor",
-    text: "Tokenize suas recompensas futuras. Libere liquidez imediata para hackathons vencidos e grants de protocolo.",
-    cta: "Entrar como vencedor",
+    title: "Hacker",
+    text: "Registra o premio, anexa prova e links do projeto, cria a antecipacao e acompanha os micropagamentos na wallet.",
+    cta: "Criar conta de vencedor",
     href: "/cadastro/vencedor",
     icon: "military_tech",
+    bullets: ["Criar antecipacao", "Acompanhar funding", "Receber liberacoes em tranches"],
+  },
+  {
+    title: "Investidor",
+    text: "Avalia ofertas verificadas, aprova hfUSD, compra fracoes do premio e recebe o claim quando a liquidacao acontece.",
+    cta: "Criar conta de investidor",
+    href: "/cadastro/investidor",
+    icon: "monitoring",
+    bullets: ["Filtrar oportunidades", "Comprar recibos", "Sacar retorno proporcional"],
   },
   {
     title: "Admin de Hackathon",
-    text: "Gerencie a distribuicao de premios, valide vencedores e integre a liquidez Kinetic aos seus eventos.",
-    cta: "Entrar como admin",
+    text: "Valida vencedores, ativa ou rejeita ofertas, abastece o escrow e confirma a liquidacao final do premio.",
+    cta: "Criar conta de admin",
     href: "/cadastro/admin",
     icon: "admin_panel_settings",
+    bullets: ["Validar provas", "Ativar ofertas", "Liquidar premios"],
   },
 ];
 
-const featureCards = [
+const steps = [
   {
-    title: "Para vencedores",
-    description:
-      "Nao espere meses pelo vesting do seu premio. Transforme recompensas futuras em ativos liquidos e libere capital agora.",
-    icon: "workspace_premium",
-    stats: ["94% Relacao LTV", "< 1s Liquidacao"],
+    title: "1. Vencedor cria o recebivel",
+    text: "O hacker informa hackathon, valor do premio, desconto e hash da prova. Isso vira uma oferta onchain.",
   },
   {
-    title: "Para investidores",
-    description:
-      "Acesse retornos institucionais comprando pools de premios com desconto de hackathons e incentivos do ecossistema.",
-    icon: "monitoring",
-    stats: ["24 vaults ativos", "18,4% APY medio"],
+    title: "2. Admin valida",
+    text: "A organizacao confirma a prova e ativa a oferta. A partir daqui os investidores podem comprar fracoes.",
+  },
+  {
+    title: "3. Investidor financia",
+    text: "Cada compra gera recibos fracionados e libera capital em tranches para o vencedor conforme o funding avanca.",
+  },
+  {
+    title: "4. Liquidacao e claim",
+    text: "Quando o premio chega, o admin liquida a oferta e os investidores sacam o retorno diretamente na carteira.",
   },
 ];
 
 export default function Home() {
+  const router = useRouter();
+  const [session, setSession] = useState<ReturnType<typeof getSession>>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const nextSession = getSession();
+    setSession(nextSession);
+    setReady(true);
+
+    if (nextSession) {
+      router.replace(getDashboardPath(nextSession.role));
+    }
+  }, [router]);
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-zinc-400">
+        Carregando experiencia...
+      </div>
+    );
+  }
+
+  if (session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-zinc-400">
+        Redirecionando para seu painel...
+      </div>
+    );
+  }
+
+  const dashboardHref = "/cadastro";
+  const heroPrimary = "Criar minha conta";
+  const heroSecondary = "Ver oportunidades";
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <TopNav active="Ecossistema" actionLabel="Cadastrar" />
+      <TopNav
+        active="Ecossistema"
+        actionLabel="Comecar agora"
+        actionHref={dashboardHref}
+        authHref="/login"
+        authLabel="Entrar"
+      />
+
       <main className="relative overflow-hidden pt-20">
         <div className="hero-orb right-[-12rem] top-[-8rem] h-[32rem] w-[32rem] bg-primary-container/30" />
         <div className="hero-orb bottom-[-10rem] left-[-12rem] h-[32rem] w-[32rem] bg-secondary-container/20" />
 
-        <section className="mx-auto max-w-7xl px-6 py-24 text-center md:px-8">
-          <div className="mx-auto max-w-5xl space-y-8">
-            <Chip tone="tertiary">Infraestrutura de rendimento de alta performance</Chip>
-            <h1 className="font-headline text-5xl font-black leading-[0.92] tracking-tight md:text-8xl">
-              TOKENIZE SUA{" "}
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                VITORIA.
-              </span>
-              <br />
-              LIQUIDE SEUS{" "}
-              <span className="bg-gradient-to-r from-secondary to-tertiary bg-clip-text text-transparent">
-                PREMIOS.
-              </span>
-            </h1>
-            <p className="mx-auto max-w-3xl text-lg font-light leading-8 text-on-surface-variant md:text-2xl">
-              O primeiro mercado secundario para recompensas de protocolo e premios
-              de hackathon. Liquidez para vencedores, alto alpha para investidores.
-            </p>
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                href="/marketplace"
-                className="rounded-2xl bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-10 py-5 font-headline text-lg font-bold text-white shadow-xl shadow-primary-container/20 transition-all hover:scale-[1.03]"
-              >
-                Conectar carteira
-              </Link>
-              <Link
-                href="/marketplace"
-                className="rounded-2xl border border-white/10 bg-surface-container-low px-10 py-5 font-headline text-lg font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
-              >
-                Explorar vaults
-              </Link>
+        <section className="mx-auto max-w-7xl px-6 py-24 md:px-8">
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+            <div className="max-w-5xl space-y-8">
+              <Chip tone="tertiary">Infraestrutura de antecipacao de premios na Monad</Chip>
+              <h1 className="font-headline text-5xl font-black leading-[0.92] tracking-tight md:text-8xl">
+                VENCA.
+                <br />
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  ANTECIPE.
+                </span>
+                <br />
+                LIQUIDE.
+              </h1>
+              <p className="max-w-3xl text-lg font-light leading-8 text-on-surface-variant md:text-2xl">
+                O HackFi conecta vencedores de hackathons, investidores e operadores em um fluxo unico:
+                o vencedor transforma um premio futuro em liquidez agora, o investidor compra com desconto
+                e o admin garante validacao e liquidacao final.
+              </p>
+              <div className="flex flex-col gap-4 sm:flex-row">
+                <Link
+                  href={dashboardHref}
+                  className="rounded-2xl bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-10 py-5 text-center font-headline text-lg font-bold text-white shadow-xl shadow-primary-container/20 transition-all hover:scale-[1.03]"
+                >
+                  {heroPrimary}
+                </Link>
+                <Link
+                  href="/marketplace"
+                  className="rounded-2xl border border-white/10 bg-surface-container-low px-10 py-5 text-center font-headline text-lg font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
+                >
+                  {heroSecondary}
+                </Link>
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/8 bg-surface-container-low p-8">
+              <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-tertiary">
+                Fluxo do produto
+              </p>
+              <div className="mt-6 space-y-5">
+                {steps.map((step) => (
+                  <div key={step.title} className="rounded-[1.35rem] border border-white/6 bg-white/[0.03] p-5">
+                    <h2 className="font-headline text-lg font-bold text-white">{step.title}</h2>
+                    <p className="mt-2 text-sm leading-7 text-on-surface-variant">{step.text}</p>
+                  </div>
+                ))}
+              </div>
+              {session ? (
+                <div className="mt-6 rounded-[1.35rem] border border-tertiary/15 bg-tertiary/10 p-5">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-tertiary">
+                    Sessao ativa
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-on-surface-variant">
+                    Sua conta ja foi criada. Continue direto no seu painel e conecte a wallet para operar onchain.
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
@@ -88,14 +164,14 @@ export default function Home() {
         <section className="mx-auto max-w-7xl px-6 pb-28 md:px-8">
           <div className="mb-14 text-center">
             <h2 className="font-headline text-4xl font-black tracking-tight md:text-5xl">
-              ESCOLHA SUA <span className="text-primary">TRILHA</span>
+              CADA PERFIL TEM UM <span className="text-primary">FLUXO CLARO</span>
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-on-surface-variant">
-              Escolha seu perfil para acessar um painel Kinetic moldado aos seus objetivos.
+              A plataforma foi desenhada para os tres lados da transacao, e nao so para navegar em cards.
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
-            {pathCards.map((card) => (
+            {flowCards.map((card) => (
               <div
                 key={card.title}
                 className="rounded-[1.75rem] border border-white/8 bg-surface-container-low p-8 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30"
@@ -105,6 +181,14 @@ export default function Home() {
                 </div>
                 <h3 className="mt-6 font-headline text-2xl font-bold">{card.title}</h3>
                 <p className="mt-4 min-h-28 leading-7 text-on-surface-variant">{card.text}</p>
+                <div className="space-y-3">
+                  {card.bullets.map((item) => (
+                    <div key={item} className="flex items-center gap-3 text-sm text-zinc-300">
+                      <Icon name="check_circle" className="h-4 w-4 text-tertiary" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
                 <Link
                   href={card.href}
                   className="mt-8 inline-flex w-full items-center justify-center rounded-2xl border border-white/8 bg-surface-container-highest px-4 py-4 text-center font-bold transition-all hover:bg-primary hover:text-on-primary"
@@ -117,118 +201,79 @@ export default function Home() {
         </section>
 
         <section className="mx-auto grid max-w-7xl gap-6 px-6 pb-28 md:grid-cols-12 md:px-8">
-          {featureCards.map((card, index) => (
-            <div
-              key={card.title}
-              className={`rounded-[2rem] border border-white/8 bg-surface-container-low p-8 ${
-                index === 0 ? "md:col-span-7" : "md:col-span-5"
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-primary">
-                  <Icon name={card.icon} className="h-6 w-6" />
-                </span>
-                <h3 className="font-headline text-3xl font-bold">{card.title}</h3>
-              </div>
-              <p className="mt-6 max-w-xl text-lg leading-8 text-on-surface-variant">
-                {card.description}
-              </p>
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                {card.stats.map((stat) => (
-                  <div
-                    key={stat}
-                    className="rounded-2xl border border-white/6 bg-surface-container-highest/60 p-4"
-                  >
-                    <p className="break-words font-mono text-xl font-bold text-primary">{stat}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+          <ValueCard
+            title="Para vencedores"
+            description="A proposta original do produto e reduzir o tempo entre vencer e receber. O painel do hacker foca em criar a antecipacao, acompanhar o funding e visualizar o valor ja liberado."
+            stats={["Premio tokenizado", "Micropagamentos em tranches", "Mesmo login para futuras vitorias"]}
+            className="md:col-span-7"
+          />
+          <ValueCard
+            title="Para investidores"
+            description="O investidor nao navega em NFTs abstratos. Ele avalia oportunidades de recebiveis verificadas, aprova hfUSD, compra fracoes do premio e acompanha claim e retorno."
+            stats={["Compra fracionada", "Quote onchain", "Claim proporcional apos settle"]}
+            className="md:col-span-5"
+          />
         </section>
 
         <section className="mx-auto max-w-7xl px-6 pb-28 md:px-8">
           <div className="rounded-[2rem] border border-white/8 bg-surface-container-lowest p-8">
             <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div>
-                <h2 className="font-headline text-4xl font-bold">Fluxo de liquidez Kinetic</h2>
+                <h2 className="font-headline text-4xl font-bold">Leituras e acoes reais do contrato</h2>
                 <p className="mt-2 text-on-surface-variant">
-                  Metricas em tempo real de tokenizacao e liquidacao de premios em todo o ecossistema Monad.
+                  O frontend ja foi adaptado para usar a `PrizeFactory`, as `PrizeOffer` e o `TestERC20` deployados na Monad testnet.
                 </p>
               </div>
-              <Chip tone="tertiary">Mainnet ativa</Chip>
+              <Chip tone="tertiary">Monad Testnet</Chip>
             </div>
-            <div className="mt-10 flex h-64 items-end gap-2">
-              {[40, 55, 45, 70, 65, 85, 75, 95, 100].map((height, index) => (
-                <div
-                  key={height}
-                  className={`flex-1 rounded-t-xl ${
-                    index < 5
-                      ? "bg-primary/50"
-                      : index < 7
-                        ? "bg-secondary/60"
-                        : "bg-tertiary/70"
-                  }`}
-                  style={{ height: `${height}%` }}
-                />
+            <div className="mt-8 grid gap-4 md:grid-cols-4">
+              {[
+                ["Winner", "Create offer, acompanhar status, funding e liberacao"],
+                ["Investor", "Approve, buy, claim e quote da oferta"],
+                ["Admin", "Activate, reject, approve settle e liquidar"],
+                ["Marketplace", "Listagem onchain das offers disponiveis"],
+              ].map(([title, text]) => (
+                <div key={title} className="rounded-2xl border border-white/6 bg-surface-container-highest/60 p-5">
+                  <p className="font-headline text-lg font-bold text-white">{title}</p>
+                  <p className="mt-2 text-sm leading-7 text-on-surface-variant">{text}</p>
+                </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-7xl px-6 pb-32 md:px-8">
-          <div className="rounded-[2.5rem] border border-white/8 bg-[linear-gradient(135deg,#1b1b1b_0%,#131313_100%)] p-8 md:p-14">
-            <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-              <div>
-                <h2 className="font-headline text-4xl font-black leading-tight tracking-tight md:text-5xl">
-                  FACA PARTE DA <span className="text-tertiary">KINETIC.</span>
-                </h2>
-                <p className="mt-6 text-xl font-light leading-8 text-on-surface-variant">
-                  Voce organiza protocolos ou hackathons? Entre na lista para integrar a infraestrutura da Kinetic e oferecer liquidez imediata aos vencedores.
-                </p>
-                <div className="mt-8 space-y-4">
-                  {[
-                    "Calendario automatizado de vesting",
-                    "Acesso whitelist ao mercado secundario",
-                    "Exposicao a investidores institucionais",
-                  ].map((item) => (
-                    <div key={item} className="flex items-center gap-3">
-                      <Icon name="check_circle" className="h-5 w-5 text-tertiary" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <form className="rounded-[2rem] border border-white/8 bg-surface-container-lowest/80 p-8">
-                <div className="space-y-5">
-                  {["Nome", "Organizacao", "Email"].map((field) => (
-                    <label key={field} className="block">
-                      <span className="mb-2 block px-1 font-mono text-[10px] uppercase tracking-[0.3em] text-on-surface-variant">
-                        {field}
-                      </span>
-                      <input
-                        type={field === "Email" ? "email" : "text"}
-                        placeholder={
-                          field === "Nome"
-                            ? "Joao Silva"
-                            : field === "Organizacao"
-                              ? "Monad Protocol"
-                              : "joao@protocolo.io"
-                        }
-                        className="w-full rounded-2xl border border-white/10 bg-surface-container-low px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40"
-                      />
-                    </label>
-                  ))}
-                  <button className="w-full rounded-2xl bg-tertiary px-5 py-4 font-headline text-lg font-bold text-on-tertiary transition-transform hover:scale-[1.02]">
-                    Entrar na lista
-                  </button>
-                </div>
-              </form>
             </div>
           </div>
         </section>
       </main>
       <Footer />
+    </div>
+  );
+}
+
+function ValueCard({
+  title,
+  description,
+  stats,
+  className,
+}: {
+  title: string;
+  description: string;
+  stats: string[];
+  className: string;
+}) {
+  return (
+    <div className={`rounded-[2rem] border border-white/8 bg-surface-container-low p-8 ${className}`}>
+      <h3 className="font-headline text-3xl font-bold">{title}</h3>
+      <p className="mt-6 max-w-xl text-lg leading-8 text-on-surface-variant">
+        {description}
+      </p>
+      <div className="mt-8 grid gap-4 sm:grid-cols-1">
+        {stats.map((stat) => (
+          <div
+            key={stat}
+            className="rounded-2xl border border-white/6 bg-surface-container-highest/60 p-4"
+          >
+            <p className="break-words font-mono text-sm font-bold text-primary">{stat}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

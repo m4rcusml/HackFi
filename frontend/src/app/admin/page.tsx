@@ -1,164 +1,269 @@
-import {
-  AppShell,
-  AppSidebar,
-  Chip,
-  Icon,
-  MetricCard,
-  SectionHeading,
-} from "@/components/kinetic";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { AppShell, AppSidebar, Chip, MetricCard, SectionHeading } from "@/components/kinetic";
+import { ActionFeedback, EmptyState, OfferCard, WalletPanel } from "@/components/hackfi-panels";
 import { ProtectedRoute } from "@/components/auth-guard";
+import { getSession } from "@/lib/auth";
+import { formatAddress, useHackfi } from "@/hooks/use-hackfi";
 
 const sideItems = [
   { href: "/admin", label: "Painel", icon: "grid_view" },
-  { href: "/marketplace", label: "Prêmios ativos", icon: "military_tech" },
+  { href: "/marketplace", label: "Premios ativos", icon: "military_tech" },
   { href: "/investor", label: "Vaults de yield", icon: "account_balance_wallet" },
   { href: "/admin", label: "Governanca", icon: "gavel" },
   { href: "/winner", label: "Configuracoes", icon: "settings" },
 ];
 
-const winners = [
-  {
-    name: "HyperLend Protocol",
-    wallet: "0x71C...123a",
-    category: "1o lugar - DeFi",
-    prize: "$10.000",
-    status: "Autorizado",
-    button: "Emitir NFT",
-  },
-  {
-    name: "Quantum Vaults",
-    wallet: "0x3fA...B9e2",
-    category: "Finalista - Infra",
-    prize: "$5.000",
-    status: "Pendente",
-    button: "Ver detalhes",
-  },
-];
-
 export default function AdminPage() {
+  const session = getSession();
+  const {
+    account,
+    connect,
+    refresh,
+    busy,
+    tokenInfo,
+    offers,
+    isAdminWallet,
+    mint,
+    approve,
+    activateOffer,
+    rejectOffer,
+    settleOffer,
+  } = useHackfi();
+
+  const [selectedOffer, setSelectedOffer] = useState("");
+  const [proofSeed, setProofSeed] = useState("proof-frontend-1");
+  const [mintAmount, setMintAmount] = useState("1000");
+  const [approveSettleAmount, setApproveSettleAmount] = useState("1000");
+  const [settleAmount, setSettleAmount] = useState("1000");
+  const [feedback, setFeedback] = useState("Conecte a wallet administradora para validar ofertas e liquidar premios.");
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    if (!selectedOffer && offers.length > 0) {
+      setSelectedOffer(offers[0].address);
+    }
+  }, [offers, selectedOffer]);
+
+  const activeOffer = useMemo(
+    () => offers.find((offer) => offer.address === selectedOffer) ?? offers[0] ?? null,
+    [offers, selectedOffer]
+  );
+
+  const pendingOffers = offers.filter((offer) => offer.statusCode === 0).length;
+  const settledOffers = offers.filter((offer) => offer.statusCode === 4).length;
+
+  async function handleActivate() {
+    if (!activeOffer) return;
+    try {
+      setHasError(false);
+      setFeedback("Ativando oferta...");
+      await activateOffer(activeOffer.address, proofSeed);
+      setFeedback("Oferta ativada.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao ativar.");
+    }
+  }
+
+  async function handleReject() {
+    if (!activeOffer) return;
+    try {
+      setHasError(false);
+      setFeedback("Rejeitando oferta...");
+      await rejectOffer(activeOffer.address);
+      setFeedback("Oferta rejeitada.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao rejeitar.");
+    }
+  }
+
+  async function handleApproveSettle() {
+    if (!activeOffer) return;
+    try {
+      setHasError(false);
+      setFeedback("Aprovando hfUSD para liquidacao...");
+      await approve(activeOffer.address, approveSettleAmount);
+      setFeedback("Approve de liquidacao confirmado.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao aprovar a liquidacao.");
+    }
+  }
+
+  async function handleMint() {
+    if (!account) return;
+    try {
+      setHasError(false);
+      setFeedback("Mintando hfUSD para a wallet administradora...");
+      await mint(account, mintAmount);
+      setFeedback("hfUSD pronto para liquidacao.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao mintar hfUSD.");
+    }
+  }
+
+  async function handleSettle() {
+    if (!activeOffer) return;
+    try {
+      setHasError(false);
+      setFeedback("Liquidando premio...");
+      await settleOffer(activeOffer.address, settleAmount);
+      setFeedback("Oferta liquidada com sucesso.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao liquidar.");
+    }
+  }
+
   return (
     <ProtectedRoute allowedRole="admin">
       <AppShell
         topActive="Administracao"
         sidebar={
           <AppSidebar
-            profileName="Operador Kinetic"
-            profileMeta="0x71C...39A2"
+            profileName={session?.name || "Admin"}
+            profileMeta={account ? formatAddress(account) : "wallet desconectada"}
             items={sideItems}
           />
         }
       >
         <SectionHeading
           title="Painel administrativo"
-          subtitle="Monitore a verificacao dos vencedores, a emissao dos premios e os estados de liberacao em escrow."
+          subtitle="Monitore as offers da PrizeFactory, valide vencedores e liquide os recebiveis quando o premio chegar."
+          action={<Chip tone={isAdminWallet ? "tertiary" : "default"}>{isAdminWallet ? "Owner detectado" : "Wallet sem permissao"}</Chip>}
         />
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total em prêmios" value="$2,5M" accent="+12%" />
-        <MetricCard label="Vencedores" value="45" />
-        <MetricCard label="Rodadas ativas" value="12" />
-        <MetricCard label="Total liquidado" value="$1,1M" />
-      </section>
+        <WalletPanel
+          account={account}
+          tokenBalance={tokenInfo?.balance}
+          tokenSymbol={tokenInfo?.symbol}
+          isAdminWallet={isAdminWallet}
+          onConnect={() => void connect()}
+          onRefresh={() => void refresh()}
+        />
 
-      <section className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="font-headline text-2xl font-black uppercase italic">
-            Vencedores registrados
-          </h2>
-          <div className="rounded-2xl bg-surface-container-low px-4 py-2 text-xs text-zinc-400">
-            Todas as categorias
-          </div>
-        </div>
-        <div className="overflow-hidden rounded-[2rem] border border-white/5 bg-surface-container-lowest">
-          <div className="hidden grid-cols-5 bg-white/5 px-6 py-4 font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500 md:grid">
-            <span>Nome do vencedor</span>
-            <span>Categoria</span>
-            <span className="text-right">Prêmio</span>
-            <span className="text-center">Status NFT</span>
-            <span className="text-right">Acoes</span>
-          </div>
-          {winners.map((winner, index) => (
-            <div
-              key={winner.name}
-              className="grid gap-4 border-t border-white/5 px-6 py-5 md:grid-cols-5 md:items-center"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-800 text-purple-400">
-                  <Icon
-                    name={index === 0 ? "workspace_premium" : "token"}
-                    className="h-4 w-4"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white">{winner.name}</p>
-                  <p className="font-mono text-[10px] text-zinc-500">{winner.wallet}</p>
-                </div>
-              </div>
-              <div>
-                <Chip tone={index === 0 ? "primary" : "default"}>{winner.category}</Chip>
-              </div>
-              <p className="font-mono text-sm text-white md:text-right">{winner.prize}</p>
-              <div className="md:text-center">
-                <Chip tone={index === 0 ? "tertiary" : "default"}>{winner.status}</Chip>
-              </div>
-              <div className="md:text-right">
-                <button
-                  className={`rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors ${
-                    index === 0
-                      ? "bg-primary-container text-white hover:opacity-90"
-                      : "border border-white/10 text-white hover:bg-white/5"
-                  }`}
-                >
-                  {winner.button}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+        <section className="grid gap-6 md:grid-cols-4">
+          <MetricCard label="Ofertas totais" value={String(offers.length)} detail="Registradas na factory" />
+          <MetricCard label="Pendentes" value={String(pendingOffers)} detail="Aguardando validacao" />
+          <MetricCard label="Liquidadas" value={String(settledOffers)} detail="Com claim disponivel" />
+          <MetricCard
+            label="Selecionada"
+            value={activeOffer ? activeOffer.hackathonName : "-"}
+            detail={activeOffer ? activeOffer.statusLabel : "Nenhuma"}
+          />
+        </section>
 
-      <section className="rounded-[2rem] border border-white/5 bg-surface-container-low p-8">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="font-headline text-2xl font-black uppercase italic">
-              Pagamentos de prêmios
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Status das liberacoes via smart contract
+        <ActionFeedback message={busy ? "Executando transacao..." : feedback} error={hasError} />
+
+        <section className="grid gap-8 xl:grid-cols-[1fr_1.35fr]">
+          <div className="rounded-[2rem] border border-white/5 bg-surface-container-low p-8">
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+              Governanca operacional
             </p>
-          </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-red-400/20 bg-red-950/30 px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-red-300">
-            <Icon name="warning" className="h-4 w-4" />
-            Deposito obrigatorio no escrow antes da emissao
-          </div>
-        </div>
-        <div className="rounded-[1.5rem] border border-white/5 bg-surface-container-lowest p-6">
-          <div className="grid gap-4 md:grid-cols-4 md:items-center">
-            <div>
-              <p className="text-sm font-bold text-white">HyperLend Protocol</p>
-              <p className="font-mono text-[10px] text-zinc-500">Vencimento: 15 dias</p>
+            <h2 className="mt-3 font-headline text-2xl font-black text-white">
+              Validacao e liquidacao
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-on-surface-variant">
+              O contrato exige que a wallet owner da factory execute ativacao, rejeicao e settle. O approve do hfUSD tambem deve usar o endereco da offer selecionada.
+            </p>
+
+            <div className="mt-8 space-y-5">
+              <Field label="Offer address" value={selectedOffer} onChange={setSelectedOffer} />
+              <Field label="Validation seed" value={proofSeed} onChange={setProofSeed} />
+              <Field label="Mint hfUSD demo" value={mintAmount} onChange={setMintAmount} />
+              <Field label="Approve para settle" value={approveSettleAmount} onChange={setApproveSettleAmount} />
+              <Field label="Valor de settle" value={settleAmount} onChange={setSettleAmount} />
             </div>
-            <div className="md:text-center">
-              <p className="font-mono text-sm text-white">$10.000</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">
-                Valor do prêmio
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                Contrato escrow
-              </p>
-              <p className="mt-1 font-mono text-xs text-zinc-400">0xAbC123...890</p>
-            </div>
-            <div className="md:text-right">
-              <button className="rounded-xl bg-tertiary-container px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-on-tertiary-container transition-colors hover:bg-tertiary">
-                Confirmar pagamento
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                onClick={() => void handleMint()}
+                disabled={!account || busy}
+                className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-headline text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Mintar hfUSD
+              </button>
+              <button
+                onClick={() => void handleActivate()}
+                disabled={!activeOffer || busy}
+                className="rounded-full bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
+              >
+                Ativar oferta
+              </button>
+              <button
+                onClick={() => void handleReject()}
+                disabled={!activeOffer || busy}
+                className="rounded-full border border-red-400/20 bg-red-950/30 px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-red-200 disabled:opacity-60"
+              >
+                Rejeitar
+              </button>
+              <button
+                onClick={() => void handleApproveSettle()}
+                disabled={!activeOffer || busy}
+                className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-headline text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Aprovar liquidacao
+              </button>
+              <button
+                onClick={() => void handleSettle()}
+                disabled={!activeOffer || busy}
+                className="rounded-full bg-tertiary px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-on-tertiary disabled:opacity-60"
+              >
+                Liquidar premio
               </button>
             </div>
           </div>
-        </div>
-      </section>
+
+          <div className="space-y-6">
+            {offers.length === 0 ? (
+              <EmptyState
+                title="Nenhuma oferta registrada"
+                text="Assim que os vencedores criarem ofertas, elas aparecerao aqui para ativacao, rejeicao e settle."
+              />
+            ) : (
+              offers.map((offer) => (
+                <OfferCard
+                  key={offer.address}
+                  offer={offer}
+                  action={
+                    <button
+                      onClick={() => setSelectedOffer(offer.address)}
+                      className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white"
+                    >
+                      Operar
+                    </button>
+                  }
+                />
+              ))
+            )}
+          </div>
+        </section>
       </AppShell>
     </ProtectedRoute>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-white">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-[1.35rem] border border-white/8 bg-surface-container-lowest px-5 py-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-primary focus:ring-2 focus:ring-primary/35"
+      />
+    </label>
   );
 }

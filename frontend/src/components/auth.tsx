@@ -142,7 +142,7 @@ export function AuthForm({
       return;
     }
 
-    router.push(getDashboardPath(role));
+    router.replace(getDashboardPath(role));
   }
 
   return (

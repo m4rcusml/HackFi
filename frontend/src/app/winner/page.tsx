@@ -1,251 +1,199 @@
-import { AppShell, AppSidebar, Chip, Icon, SectionHeading } from "@/components/kinetic";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { AppShell, AppSidebar, Chip, MetricCard, SectionHeading } from "@/components/kinetic";
+import { ActionFeedback, EmptyState, OfferCard, WalletPanel } from "@/components/hackfi-panels";
 import { ProtectedRoute } from "@/components/auth-guard";
+import { getSession } from "@/lib/auth";
+import { formatAddress, useHackfi } from "@/hooks/use-hackfi";
 
 const sideItems = [
   { href: "/winner", label: "Painel", icon: "grid_view" },
-  { href: "/marketplace", label: "Prêmios ativos", icon: "military_tech" },
-  { href: "/winner", label: "Meu yield", icon: "account_balance_wallet" },
+  { href: "/marketplace", label: "Premios ativos", icon: "military_tech" },
+  { href: "/winner", label: "Minhas ofertas", icon: "account_balance_wallet" },
   { href: "/admin", label: "Governanca", icon: "gavel" },
   { href: "/winner", label: "Configuracoes", icon: "settings" },
 ];
 
+const initialForm = {
+  hackathonName: "Monad Hackathon",
+  symbol: "MHACK",
+  proofSeed: "proof-frontend-1",
+  prizeAmount: "1000",
+  discountBps: "1000",
+  expectedPaymentDate: String(Math.floor(Date.now() / 1000) + 2592000),
+};
+
 export default function WinnerPage() {
+  const session = getSession();
+  const {
+    account,
+    connect,
+    refresh,
+    busy,
+    tokenInfo,
+    participantOffers,
+    createOffer,
+    isAdminWallet,
+  } = useHackfi();
+  const [form, setForm] = useState(initialForm);
+  const [feedback, setFeedback] = useState("Conecte sua wallet e registre a primeira antecipacao.");
+  const [hasError, setHasError] = useState(false);
+
+  const mainOffer = participantOffers[0] ?? null;
+
+  useEffect(() => {
+    if (participantOffers.length > 0) {
+      setFeedback("Ofertas carregadas a partir do contrato da Monad.");
+      setHasError(false);
+    }
+  }, [participantOffers]);
+
+  const progress = useMemo(() => {
+    if (!mainOffer) return 0;
+    const funded = Number(mainOffer.fundedAmount);
+    const target = Number(mainOffer.fundingTarget);
+    if (!target) return 0;
+    return Math.min(100, Math.round((funded / target) * 100));
+  }, [mainOffer]);
+
+  async function handleCreateOffer() {
+    try {
+      setHasError(false);
+      setFeedback("Criando oferta onchain...");
+      await createOffer(form);
+      setFeedback("Oferta criada com sucesso. Atualize ou aguarde a sincronizacao.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao criar a oferta.");
+    }
+  }
+
   return (
     <ProtectedRoute allowedRole="vencedor">
       <AppShell
         topActive="Ecossistema"
         sidebar={
           <AppSidebar
-            profileName="Joao Kinetic"
-            profileMeta="0x71C...4f92"
+            profileName={session?.name || "Vencedor"}
+            profileMeta={account ? formatAddress(account) : "wallet desconectada"}
             items={sideItems}
           />
         }
       >
         <SectionHeading
           title="Painel do vencedor"
-          subtitle="Gerencie a antecipacao do premio e os fluxos de liquidez do seu pool."
-          action={<Chip tone="tertiary">Arquiteto autorizado</Chip>}
+          subtitle="Crie antecipacoes reais, acompanhe a captacao de investidores e veja o valor liberado para sua wallet."
+          action={<Chip tone="tertiary">Fluxo onchain ativo</Chip>}
         />
 
-      <section className="space-y-6">
-        <h2 className="font-headline text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-500">
-          Performance da antecipacao
-        </h2>
-        <div className="grid gap-6 md:grid-cols-12">
-          <div className="grid gap-4 md:col-span-4">
-            {[
-              ["Valor do prêmio", "$15.000", "trophy", "text-purple-500"],
-              ["Total antecipado", "$12.000", "rocket_launch", "text-blue-500"],
-              ["Investidores unicos", "24", "group", "text-tertiary"],
-            ].map(([label, value, icon, accent]) => (
-              <div
-                key={label}
-                className="flex items-center justify-between rounded-[1.5rem] border border-white/5 bg-surface-container-low p-6"
-              >
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                    {label}
-                  </p>
-                  <h3 className="mt-2 font-mono text-2xl font-bold">{value}</h3>
-                </div>
-                <Icon name={icon} className={`h-6 w-6 ${accent}`} />
-              </div>
-            ))}
-          </div>
-
-          <div className="rounded-[2rem] border border-white/5 bg-surface-container-low p-8 md:col-span-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs text-zinc-400">Pool de captacao</p>
-                <h3 className="mt-1 font-headline text-2xl font-bold">
-                  ETH Global Paris Pool
-                </h3>
-              </div>
-              <a href="#" className="text-[10px] uppercase tracking-[0.2em] text-primary">
-                Explorer
-              </a>
-            </div>
-            <div className="my-6 space-y-4">
-              <div className="flex items-end justify-between">
-                <span className="font-mono text-5xl font-bold">80%</span>
-                <span className="font-mono text-xs text-zinc-500">$12 mil / $15 mil</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-surface-container-highest">
-                <div className="h-full w-[80%] rounded-full bg-[linear-gradient(90deg,#6e54ff_0%,#4edea3_100%)] shadow-[0_0_15px_rgba(110,84,255,0.4)]" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <MiniStat label="Liquido agora" value="$9.600" accent="text-tertiary" />
-              <MiniStat label="Travado" value="$2.400" accent="text-zinc-200" />
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] bg-[linear-gradient(135deg,rgba(147,51,234,0.25),rgba(59,130,246,0.2))] p-px md:col-span-3">
-            <div className="flex h-full flex-col items-center rounded-[calc(2rem-1px)] bg-[#131313] p-6 text-center">
-              <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[1.5rem] bg-surface-container-lowest">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#4edea322,transparent_35%),linear-gradient(135deg,#0e0e0e,#182227)]" />
-                <div className="relative z-10">
-                  <Icon name="verified" className="mx-auto h-12 w-12 text-tertiary" />
-                  <p className="mt-2 font-headline text-lg font-black tracking-[0.22em]">
-                    VALIDADO
-                  </p>
-                </div>
-              </div>
-              <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                Token on-chain
-              </p>
-              <p className="mt-1 font-mono text-xs text-primary">0x...789_NFT</p>
-              <button className="mt-5 w-full rounded-xl border border-white/10 py-2.5 font-headline text-[10px] font-bold uppercase tracking-[0.2em] transition-colors hover:bg-white/5">
-                Detalhes
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-6">
-        <h3 className="flex items-center gap-2 font-headline text-sm font-bold text-zinc-400">
-          <Icon name="route" className="h-4 w-4" />
-          Ciclo de vida do prêmio
-        </h3>
-        <div className="relative rounded-[2rem] border border-white/5 bg-surface-container-lowest p-8">
-          <div className="absolute top-1/2 left-8 right-8 hidden h-px -translate-y-1/2 bg-white/5 md:block" />
-          <div className="grid gap-8 md:grid-cols-4">
-            {[
-              ["Vencedor anunciado", "12 out. 2023", "check", "bg-tertiary text-on-tertiary"],
-              ["Ativos verificados", "14 out. 2023", "check", "bg-tertiary text-on-tertiary"],
-              ["Antecipacao ativa", "Em andamento", "payments", "bg-primary-container text-white ring-4 ring-background"],
-              ["Liquidacao final", "12 dez. 2023", "account_balance", "border border-white/10 bg-surface-container-high text-zinc-500"],
-            ].map(([title, date, icon, styles], index) => (
-              <div key={title} className="relative z-10 flex flex-col items-center text-center">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${styles}`}>
-                  <Icon name={icon} className="h-4 w-4" />
-                </div>
-                <p
-                  className={`mt-3 font-headline text-xs font-bold ${
-                    index === 2 ? "text-primary" : "text-white"
-                  }`}
-                >
-                  {title}
-                </p>
-                <p className="mt-1 font-mono text-[10px] text-zinc-500">{date}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-8 md:grid-cols-2">
-        <StatusPanel
-          eyebrow="Status da verificacao"
-          title="Aguardando autorizacao"
-          description="A organizacao ETH Global esta validando os parametros de governanca do seu contrato."
-          icon="settings"
-          tone="muted"
+        <WalletPanel
+          account={account}
+          tokenBalance={tokenInfo?.balance}
+          tokenSymbol={tokenInfo?.symbol}
+          isAdminWallet={isAdminWallet}
+          onConnect={() => void connect()}
+          onRefresh={() => void refresh()}
         />
-        <StatusPanel
-          eyebrow="Acoes disponiveis"
-          title="Pronto para antecipacao"
-          description="Voce esta autorizado a tokenizar sua liquidez futura. Comece a captar agora."
-          icon="emoji_events"
-          tone="active"
-        />
-      </section>
 
-      <section className="rounded-[2rem] border border-white/5 bg-surface-container-low p-8">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="max-w-2xl">
+        <section className="grid gap-6 md:grid-cols-12">
+          <MetricCard
+            label="Minhas ofertas"
+            value={String(participantOffers.length)}
+            detail="Total criado pela sua wallet"
+            className="md:col-span-3"
+          />
+          <MetricCard
+            label="Premio principal"
+            value={mainOffer ? `${mainOffer.prizeAmount} ${tokenInfo?.symbol || ""}` : "-"}
+            detail="Valor bruto do recebivel"
+            className="md:col-span-3"
+          />
+          <MetricCard
+            label="Funding atual"
+            value={mainOffer ? `${mainOffer.fundedAmount} ${tokenInfo?.symbol || ""}` : "-"}
+            detail={`Progresso: ${progress}%`}
+            className="md:col-span-3"
+          />
+          <MetricCard
+            label="Liberado para voce"
+            value={mainOffer ? `${mainOffer.releasedToParticipant} ${tokenInfo?.symbol || ""}` : "-"}
+            detail="Micropagamentos a cada nova tranche"
+            className="md:col-span-3"
+          />
+        </section>
+
+        <ActionFeedback message={busy ? "Executando transacao..." : feedback} error={hasError} />
+
+        <section className="grid gap-8 xl:grid-cols-[1.05fr_1.35fr]">
+          <div className="rounded-[2rem] border border-white/5 bg-surface-container-low p-8">
             <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-              Novas antecipacoes
-            </p>
-            <h3 className="mt-3 font-headline text-2xl font-black text-white">
-              Use a mesma conta para antecipar premios futuros
-            </h3>
-            <p className="mt-3 text-sm leading-7 text-on-surface-variant">
-              Sempre que voce voltar a vencer um hackathon ou bounty, podera criar
-              uma nova antecipacao dentro da plataforma sem precisar abrir outra conta.
-            </p>
-          </div>
-          <div className="flex w-full flex-col gap-3 md:w-auto">
-            <button className="rounded-full bg-[linear-gradient(135deg,#6e54ff_0%,#7c4dff_100%)] px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-white transition-transform hover:scale-[1.01]">
               Nova antecipacao
-            </button>
-            <button className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-headline text-sm font-semibold text-white transition-colors hover:bg-white/[0.06]">
-              Ver antecipacoes anteriores
+            </p>
+            <h2 className="mt-3 font-headline text-2xl font-black text-white">
+              Registrar premio
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-on-surface-variant">
+              O backend pode armazenar documentos e links. Nesta camada, o frontend envia para o contrato apenas os dados financeiros e o hash da prova.
+            </p>
+
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
+              <Field label="Hackathon" value={form.hackathonName} onChange={(value) => setForm((current) => ({ ...current, hackathonName: value }))} />
+              <Field label="Simbolo" value={form.symbol} onChange={(value) => setForm((current) => ({ ...current, symbol: value }))} />
+              <Field label="Proof seed" value={form.proofSeed} onChange={(value) => setForm((current) => ({ ...current, proofSeed: value }))} />
+              <Field label="Valor do premio" value={form.prizeAmount} onChange={(value) => setForm((current) => ({ ...current, prizeAmount: value }))} />
+              <Field label="Desconto BPS" value={form.discountBps} onChange={(value) => setForm((current) => ({ ...current, discountBps: value }))} />
+              <Field label="Pagamento esperado" value={form.expectedPaymentDate} onChange={(value) => setForm((current) => ({ ...current, expectedPaymentDate: value }))} />
+            </div>
+
+            <button
+              onClick={() => void handleCreateOffer()}
+              disabled={busy}
+              className="mt-8 rounded-full bg-[linear-gradient(135deg,#6e54ff_0%,#7c4dff_100%)] px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
+            >
+              Criar antecipacao
             </button>
           </div>
-        </div>
-      </section>
+
+          <div className="space-y-6">
+            {participantOffers.length === 0 ? (
+              <EmptyState
+                title="Nenhuma antecipacao criada ainda"
+                text="Assim que voce criar a primeira oferta onchain, ela aparecera aqui com status, funding, valor liberado e metadados do contrato."
+              />
+            ) : (
+              participantOffers.map((offer) => (
+                <OfferCard
+                  key={offer.address}
+                  offer={offer}
+                  action={<Chip tone="secondary">{offer.discountBps / 100}% desconto</Chip>}
+                />
+              ))
+            )}
+          </div>
+        </section>
       </AppShell>
     </ProtectedRoute>
   );
 }
 
-function MiniStat({
+function Field({
   label,
   value,
-  accent,
+  onChange,
 }: {
   label: string;
   value: string;
-  accent: string;
+  onChange: (value: string) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-      <p className="font-mono text-[9px] uppercase tracking-[0.25em] text-zinc-500">
-        {label}
-      </p>
-      <p className={`mt-2 font-mono text-lg font-bold ${accent}`}>{value}</p>
-    </div>
-  );
-}
-
-function StatusPanel({
-  eyebrow,
-  title,
-  description,
-  icon,
-  tone,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  icon: string;
-  tone: "muted" | "active";
-}) {
-  return (
-    <div className="space-y-4">
-      <p className="ml-4 font-mono text-[9px] uppercase tracking-[0.25em] text-zinc-600">
-        {eyebrow}
-      </p>
-      <div
-        className={`rounded-[2rem] border p-8 text-center ${
-          tone === "active"
-            ? "border-purple-500/20 bg-surface-container-low"
-            : "border-dashed border-white/10 bg-surface-container-lowest"
-        }`}
-      >
-        <div
-          className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
-            tone === "active" ? "bg-purple-500/10" : "bg-surface-container-low"
-          }`}
-        >
-          <Icon
-            name={icon}
-            className={`h-6 w-6 ${tone === "active" ? "text-purple-500" : "text-zinc-500"}`}
-          />
-        </div>
-        <h4 className="mt-4 font-headline text-sm font-bold">{title}</h4>
-        <p className="mx-auto mt-2 max-w-sm text-[11px] leading-6 text-zinc-500">
-          {description}
-        </p>
-        {tone === "active" ? (
-          <button className="mt-5 rounded-full bg-white px-6 py-2.5 font-headline text-[10px] font-black uppercase tracking-[0.25em] text-zinc-900 transition-colors hover:bg-zinc-200">
-            Configurar pool
-          </button>
-        ) : null}
-      </div>
-    </div>
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-white">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-[1.35rem] border border-white/8 bg-surface-container-lowest px-5 py-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-primary focus:ring-2 focus:ring-primary/35"
+      />
+    </label>
   );
 }

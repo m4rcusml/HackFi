@@ -24,6 +24,11 @@ function canUseStorage() {
   return typeof window !== "undefined";
 }
 
+function notifySessionChange() {
+  if (!canUseStorage()) return;
+  window.dispatchEvent(new Event("hackfi-session-changed"));
+}
+
 export function getDashboardPath(role: UserRole) {
   if (role === "investidor") return "/investor";
   if (role === "vencedor") return "/winner";
@@ -62,11 +67,13 @@ export function getSession(): SessionUser | null {
 
 export function setSession(user: SessionUser) {
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  notifySessionChange();
 }
 
 export function clearSession() {
   if (!canUseStorage()) return;
   window.localStorage.removeItem(SESSION_KEY);
+  notifySessionChange();
 }
 
 export function registerUser(input: {

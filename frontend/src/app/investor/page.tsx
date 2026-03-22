@@ -1,207 +1,260 @@
-import {
-  AppShell,
-  AppSidebar,
-  Chip,
-  Icon,
-  MetricCard,
-  SectionHeading,
-} from "@/components/kinetic";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { AppShell, AppSidebar, Chip, MetricCard, SectionHeading } from "@/components/kinetic";
+import { ActionFeedback, EmptyState, OfferCard, WalletPanel } from "@/components/hackfi-panels";
 import { ProtectedRoute } from "@/components/auth-guard";
+import { getSession } from "@/lib/auth";
+import { formatAddress, useHackfi } from "@/hooks/use-hackfi";
 
 const sideItems = [
   { href: "/investor", label: "Painel", icon: "grid_view" },
-  { href: "/marketplace", label: "Prêmios ativos", icon: "military_tech" },
+  { href: "/marketplace", label: "Premios ativos", icon: "military_tech" },
   { href: "/investor", label: "Vaults de yield", icon: "account_balance_wallet" },
   { href: "/admin", label: "Governanca", icon: "gavel" },
   { href: "/winner", label: "Configuracoes", icon: "settings" },
 ];
 
-const positions = [
-  {
-    name: "Solar Grid Alpha",
-    category: "Imoveis tokenizados",
-    ownership: "4,25%",
-    invested: "$5.000",
-    expected: "$5.850",
-    payout: "15 dez.",
-  },
-  {
-    name: "Bio-Tech Yield Fund",
-    category: "Venture Capital",
-    ownership: "1,10%",
-    invested: "$12.000",
-    expected: "$14.200",
-    payout: "12 nov.",
-  },
-  {
-    name: "Cyber-Fleet Logistics",
-    category: "Supply Chain",
-    ownership: "0,85%",
-    invested: "$3.000",
-    expected: "$3.450",
-    payout: "fev. 2027",
-  },
-];
-
 export default function InvestorPage() {
+  const session = getSession();
+  const {
+    account,
+    connect,
+    refresh,
+    busy,
+    tokenInfo,
+    offers,
+    isAdminWallet,
+    approve,
+    buy,
+    claim,
+    getQuote,
+    mint,
+  } = useHackfi();
+
+  const [selectedOffer, setSelectedOffer] = useState("");
+  const [approveAmount, setApproveAmount] = useState("900");
+  const [buyAmount, setBuyAmount] = useState("500");
+  const [mintAmount, setMintAmount] = useState("1000");
+  const [feedback, setFeedback] = useState("Conecte sua wallet para explorar as ofertas onchain.");
+  const [hasError, setHasError] = useState(false);
+  const [quote, setQuote] = useState("0");
+
+  useEffect(() => {
+    if (!selectedOffer && offers.length > 0) {
+      setSelectedOffer(offers[0].address);
+    }
+  }, [offers, selectedOffer]);
+
+  useEffect(() => {
+    if (!selectedOffer) return;
+    void getQuote(selectedOffer, buyAmount).then(setQuote).catch(() => setQuote("0"));
+  }, [buyAmount, getQuote, selectedOffer]);
+
+  const activeOffer = useMemo(
+    () => offers.find((offer) => offer.address === selectedOffer) ?? offers[0] ?? null,
+    [offers, selectedOffer]
+  );
+
+  const claimableOffers = offers.filter((offer) => Number(offer.claimable) > 0);
+
+  async function handleApprove() {
+    if (!activeOffer) return;
+    try {
+      setHasError(false);
+      setFeedback("Aprovando hfUSD para a oferta selecionada...");
+      await approve(activeOffer.address, approveAmount);
+      setFeedback("Approve confirmado.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao aprovar.");
+    }
+  }
+
+  async function handleBuy() {
+    if (!activeOffer) return;
+    try {
+      setHasError(false);
+      setFeedback("Executando compra de recibos...");
+      await buy(activeOffer.address, buyAmount);
+      setFeedback("Compra confirmada onchain.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao comprar.");
+    }
+  }
+
+  async function handleClaim() {
+    if (!activeOffer) return;
+    try {
+      setHasError(false);
+      setFeedback("Solicitando claim...");
+      await claim(activeOffer.address);
+      setFeedback("Claim recebido com sucesso.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao executar claim.");
+    }
+  }
+
+  async function handleMint() {
+    if (!account) return;
+    try {
+      setHasError(false);
+      setFeedback("Mintando hfUSD de teste para sua wallet...");
+      await mint(account, mintAmount);
+      setFeedback("hfUSD creditado na wallet conectada.");
+    } catch (error) {
+      setHasError(true);
+      setFeedback(error instanceof Error ? error.message : "Falha ao mintar hfUSD.");
+    }
+  }
+
   return (
     <ProtectedRoute allowedRole="investidor">
       <AppShell
         topActive="Investidores"
         sidebar={
           <AppSidebar
-            profileName="Operador Kinetic"
-            profileMeta="0x71C...39A2"
+            profileName={session?.name || "Investidor"}
+            profileMeta={account ? formatAddress(account) : "wallet desconectada"}
             items={sideItems}
           />
         }
       >
         <SectionHeading
           title="Painel do investidor"
-          subtitle="Acompanhe a performance do portfolio e as posicoes de rendimento no marketplace Kinetic."
+          subtitle="Acompanhe oportunidades reais, aprove hfUSD, compre recibos e saque o retorno na liquidacao."
+          action={<Chip tone="tertiary">Portfolio onchain</Chip>}
         />
 
-      <section className="grid gap-6 md:grid-cols-5">
-        <MetricCard
-          label="Valor total do portfolio"
-          value="$28.500,00"
-          accent="+14% ROI medio"
-          detail="Lucro projetado: $3.500"
-          className="md:col-span-2"
+        <WalletPanel
+          account={account}
+          tokenBalance={tokenInfo?.balance}
+          tokenSymbol={tokenInfo?.symbol}
+          isAdminWallet={isAdminWallet}
+          onConnect={() => void connect()}
+          onRefresh={() => void refresh()}
         />
-        <MetricCard label="Total investido" value="$25.000" icon="account_balance" />
-        <MetricCard label="Posicoes" value="08" icon="layers" />
-        <div className="kinetic-gradient rounded-3xl p-6 text-center text-white">
-          <span className="inline-flex">
-            <Icon name="bolt" className="h-10 w-10" />
-          </span>
-          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.25em] text-white/80">
-            Score de performance
-          </p>
-          <h3 className="mt-2 font-headline text-4xl font-black">A+</h3>
-        </div>
-      </section>
 
-      <div className="rounded-r-3xl border-l-4 border-primary-container bg-primary-container/10 p-6">
-        <div className="flex items-center gap-4">
-          <Icon name="info" className="h-5 w-5 text-primary" />
-          <p className="font-medium">
-            Automatico, proporcional e transparente{" "}
-            <span className="font-mono text-sm text-primary">
-              (verificado em blockchain)
-            </span>
-          </p>
-        </div>
-      </div>
+        <section className="grid gap-6 md:grid-cols-4">
+          <MetricCard label="Ofertas disponiveis" value={String(offers.length)} detail="Leitura da PrizeFactory" />
+          <MetricCard
+            label="Selecionada"
+            value={activeOffer ? activeOffer.hackathonName : "-"}
+            detail={activeOffer ? `${activeOffer.discountBps / 100}% de desconto` : "Sem oferta"}
+          />
+          <MetricCard
+            label="Quote da compra"
+            value={`${quote} ${tokenInfo?.symbol || ""}`}
+            detail={`Para ${buyAmount || "0"} recibos`}
+          />
+          <MetricCard
+            label="Claims disponiveis"
+            value={String(claimableOffers.length)}
+            detail="Ofertas com saldo pronto para saque"
+          />
+        </section>
 
-      <section className="space-y-5">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="font-headline text-3xl font-black tracking-tight">
-            POSICOES ATIVAS
-          </h2>
-          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-            Sincronizando com a mainnet...
-          </p>
-        </div>
-        <div className="space-y-4">
-          {positions.map((position, index) => (
-            <div
-              key={position.name}
-              className="rounded-3xl border border-white/6 bg-surface-container-low p-6"
-            >
-              <div className="grid gap-6 md:grid-cols-12 md:items-center">
-                <div className="md:col-span-3">
-                  <h3 className="text-lg font-bold text-white">{position.name}</h3>
-                  <p className="text-sm text-zinc-500">{position.category}</p>
-                </div>
-                <InfoBlock label="Participacao" value={position.ownership} />
-                <InfoBlock label="Investido" value={position.invested} />
-                <InfoBlock label="Retorno esperado" value={position.expected} accent />
-                <div className="md:col-span-3 md:text-right">
-                  <Chip tone={index === 1 ? "secondary" : index === 2 ? "default" : "tertiary"}>
-                    Pagamento: {position.payout}
-                  </Chip>
-                </div>
-              </div>
-              <div className="mt-5 rounded-2xl border border-white/5 bg-white/[0.02] p-4">
-                {index === 0 ? (
-                  <>
-                    <div className="mb-2 flex justify-between gap-4 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                      <span>Progresso ate o pagamento</span>
-                      <span>54 dias restantes</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-surface-container-highest">
-                      <div className="h-full w-[72%] rounded-full bg-primary-container" />
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-sm leading-6 text-zinc-300">
-                    {index === 1
-                      ? "Em 12 nov. 2026, voce recebera $1.500 automaticamente na carteira."
-                      : "Posicao de longo prazo com liquidacao final prevista para o inicio de 2027."}
-                  </p>
-                )}
-              </div>
+        <ActionFeedback message={busy ? "Executando transacao..." : feedback} error={hasError} />
+
+        <section className="grid gap-8 xl:grid-cols-[1fr_1.35fr]">
+          <div className="rounded-[2rem] border border-white/5 bg-surface-container-low p-8">
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+              Execucao da compra
+            </p>
+            <h2 className="mt-3 font-headline text-2xl font-black text-white">
+              Comprar fracao do premio
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-on-surface-variant">
+              Primeiro aprove o gasto do hfUSD para a offer selecionada. Depois envie a quantidade de recibos que deseja comprar.
+            </p>
+
+            <div className="mt-8 space-y-5">
+              <Field label="Mint hfUSD demo" value={mintAmount} onChange={setMintAmount} />
+              <Field label="Offer address" value={selectedOffer} onChange={setSelectedOffer} />
+              <Field label="Aprovar hfUSD" value={approveAmount} onChange={setApproveAmount} />
+              <Field label="Recibos a comprar" value={buyAmount} onChange={setBuyAmount} />
             </div>
-          ))}
-        </div>
-      </section>
 
-      <section className="space-y-5">
-        <h2 className="font-headline text-3xl font-black tracking-tight">HISTORICO</h2>
-        <div className="grid gap-6 md:grid-cols-2">
-          {[
-            ["Protocol X Liquidity", "Pago em 12 out. 2024", "+22,4%", "$1.240,00"],
-            ["Deep Sea Mining NFT", "Pago em 05 ago. 2024", "+18,1%", "$890,00"],
-          ].map(([name, date, roi, profit]) => (
-            <div key={name} className="glass-panel kinetic-border rounded-3xl p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-bold text-white">{name}</h3>
-                  <p className="text-xs text-zinc-500">{date}</p>
-                </div>
-                <Chip tone="tertiary">Pago</Chip>
-              </div>
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="rounded-2xl bg-white/5 p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                    ROI final
-                  </p>
-                  <p className="mt-2 font-bold text-tertiary">{roi}</p>
-                </div>
-                <div className="rounded-2xl bg-white/5 p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                    Lucro total
-                  </p>
-                  <p className="mt-2 font-bold text-white">{profit}</p>
-                </div>
-              </div>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                onClick={() => void handleMint()}
+                disabled={!account || busy}
+                className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-headline text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Mintar hfUSD
+              </button>
+              <button
+                onClick={() => void handleApprove()}
+                disabled={!activeOffer || busy}
+                className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-headline text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Aprovar compra
+              </button>
+              <button
+                onClick={() => void handleBuy()}
+                disabled={!activeOffer || busy}
+                className="rounded-full bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
+              >
+                Comprar recibos
+              </button>
+              <button
+                onClick={() => void handleClaim()}
+                disabled={!activeOffer || busy}
+                className="rounded-full bg-tertiary px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-on-tertiary disabled:opacity-60"
+              >
+                Sacar claim
+              </button>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+
+          <div className="space-y-6">
+            {offers.length === 0 ? (
+              <EmptyState
+                title="Nenhuma oferta encontrada"
+                text="Assim que um hacker criar ofertas e o admin ativar, elas aparecerao aqui para compra."
+              />
+            ) : (
+              offers.map((offer) => (
+                <OfferCard
+                  key={offer.address}
+                  offer={offer}
+                  action={
+                    <button
+                      onClick={() => setSelectedOffer(offer.address)}
+                      className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white"
+                    >
+                      Selecionar
+                    </button>
+                  }
+                />
+              ))
+            )}
+          </div>
+        </section>
       </AppShell>
     </ProtectedRoute>
   );
 }
 
-function InfoBlock({
+function Field({
   label,
   value,
-  accent = false,
+  onChange,
 }: {
   label: string;
   value: string;
-  accent?: boolean;
+  onChange: (value: string) => void;
 }) {
   return (
-    <div className="md:col-span-2">
-      <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-        {label}
-      </p>
-      <p className={`break-words font-mono ${accent ? "text-tertiary" : "text-white"}`}>
-        {value}
-      </p>
-    </div>
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-white">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-[1.35rem] border border-white/8 bg-surface-container-lowest px-5 py-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-primary focus:ring-2 focus:ring-primary/35"
+      />
+    </label>
   );
 }
