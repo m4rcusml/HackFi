@@ -1,4 +1,5 @@
 import { AppShell, AppSidebar, Chip, Icon, SectionHeading } from "@/components/kinetic";
+import { ProtectedRoute } from "@/components/auth-guard";
 
 const sideItems = [
   { href: "/winner", label: "Painel", icon: "grid_view" },
@@ -10,21 +11,22 @@ const sideItems = [
 
 export default function WinnerPage() {
   return (
-    <AppShell
-      topActive="Ecossistema"
-      sidebar={
-        <AppSidebar
-          profileName="Joao Kinetic"
-          profileMeta="0x71C...4f92"
-          items={sideItems}
+    <ProtectedRoute allowedRole="vencedor">
+      <AppShell
+        topActive="Ecossistema"
+        sidebar={
+          <AppSidebar
+            profileName="Joao Kinetic"
+            profileMeta="0x71C...4f92"
+            items={sideItems}
+          />
+        }
+      >
+        <SectionHeading
+          title="Painel do vencedor"
+          subtitle="Gerencie a antecipacao do premio e os fluxos de liquidez do seu pool."
+          action={<Chip tone="tertiary">Arquiteto autorizado</Chip>}
         />
-      }
-    >
-      <SectionHeading
-        title="Painel do vencedor"
-        subtitle="Gerencie a antecipacao do premio e os fluxos de liquidez do seu pool."
-        action={<Chip tone="tertiary">Arquiteto autorizado</Chip>}
-      />
 
       <section className="space-y-6">
         <h2 className="font-headline text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-500">
@@ -150,7 +152,33 @@ export default function WinnerPage() {
           tone="active"
         />
       </section>
-    </AppShell>
+
+      <section className="rounded-[2rem] border border-white/5 bg-surface-container-low p-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-2xl">
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+              Novas antecipacoes
+            </p>
+            <h3 className="mt-3 font-headline text-2xl font-black text-white">
+              Use a mesma conta para antecipar premios futuros
+            </h3>
+            <p className="mt-3 text-sm leading-7 text-on-surface-variant">
+              Sempre que voce voltar a vencer um hackathon ou bounty, podera criar
+              uma nova antecipacao dentro da plataforma sem precisar abrir outra conta.
+            </p>
+          </div>
+          <div className="flex w-full flex-col gap-3 md:w-auto">
+            <button className="rounded-full bg-[linear-gradient(135deg,#6e54ff_0%,#7c4dff_100%)] px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-white transition-transform hover:scale-[1.01]">
+              Nova antecipacao
+            </button>
+            <button className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-headline text-sm font-semibold text-white transition-colors hover:bg-white/[0.06]">
+              Ver antecipacoes anteriores
+            </button>
+          </div>
+        </div>
+      </section>
+      </AppShell>
+    </ProtectedRoute>
   );
 }
 

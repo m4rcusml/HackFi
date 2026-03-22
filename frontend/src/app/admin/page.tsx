@@ -6,6 +6,7 @@ import {
   MetricCard,
   SectionHeading,
 } from "@/components/kinetic";
+import { ProtectedRoute } from "@/components/auth-guard";
 
 const sideItems = [
   { href: "/admin", label: "Painel", icon: "grid_view" },
@@ -36,20 +37,21 @@ const winners = [
 
 export default function AdminPage() {
   return (
-    <AppShell
-      topActive="Administracao"
-      sidebar={
-        <AppSidebar
-          profileName="Operador Kinetic"
-          profileMeta="0x71C...39A2"
-          items={sideItems}
+    <ProtectedRoute allowedRole="admin">
+      <AppShell
+        topActive="Administracao"
+        sidebar={
+          <AppSidebar
+            profileName="Operador Kinetic"
+            profileMeta="0x71C...39A2"
+            items={sideItems}
+          />
+        }
+      >
+        <SectionHeading
+          title="Painel administrativo"
+          subtitle="Monitore a verificacao dos vencedores, a emissao dos premios e os estados de liberacao em escrow."
         />
-      }
-    >
-      <SectionHeading
-        title="Painel administrativo"
-        subtitle="Monitore a verificacao dos vencedores, a emissao dos premios e os estados de liberacao em escrow."
-      />
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total em prêmios" value="$2,5M" accent="+12%" />
@@ -156,6 +158,7 @@ export default function AdminPage() {
           </div>
         </div>
       </section>
-    </AppShell>
+      </AppShell>
+    </ProtectedRoute>
   );
 }

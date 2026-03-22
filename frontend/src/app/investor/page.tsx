@@ -6,6 +6,7 @@ import {
   MetricCard,
   SectionHeading,
 } from "@/components/kinetic";
+import { ProtectedRoute } from "@/components/auth-guard";
 
 const sideItems = [
   { href: "/investor", label: "Painel", icon: "grid_view" },
@@ -44,20 +45,21 @@ const positions = [
 
 export default function InvestorPage() {
   return (
-    <AppShell
-      topActive="Investidores"
-      sidebar={
-        <AppSidebar
-          profileName="Operador Kinetic"
-          profileMeta="0x71C...39A2"
-          items={sideItems}
+    <ProtectedRoute allowedRole="investidor">
+      <AppShell
+        topActive="Investidores"
+        sidebar={
+          <AppSidebar
+            profileName="Operador Kinetic"
+            profileMeta="0x71C...39A2"
+            items={sideItems}
+          />
+        }
+      >
+        <SectionHeading
+          title="Painel do investidor"
+          subtitle="Acompanhe a performance do portfolio e as posicoes de rendimento no marketplace Kinetic."
         />
-      }
-    >
-      <SectionHeading
-        title="Painel do investidor"
-        subtitle="Acompanhe a performance do portfolio e as posicoes de rendimento no marketplace Kinetic."
-      />
 
       <section className="grid gap-6 md:grid-cols-5">
         <MetricCard
@@ -178,7 +180,8 @@ export default function InvestorPage() {
           ))}
         </div>
       </section>
-    </AppShell>
+      </AppShell>
+    </ProtectedRoute>
   );
 }
 
