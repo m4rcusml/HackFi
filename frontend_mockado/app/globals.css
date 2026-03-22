@@ -49,9 +49,67 @@ button {
   margin-bottom: 28px;
 }
 
+.hero-product {
+  padding: 32px;
+  border: 1px solid rgba(94, 234, 212, 0.16);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(96, 165, 250, 0.1), transparent 45%),
+    linear-gradient(180deg, rgba(16, 26, 39, 0.96), rgba(10, 16, 25, 0.92));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.hero-copy {
+  flex: 1 1 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(94, 234, 212, 0.12);
+  border: 1px solid rgba(94, 234, 212, 0.18);
+  color: #bdfcf2;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.hero-panel {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hero-stat {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(11, 20, 32, 0.88);
+}
+
+.hero-stat strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+}
+
 .hero h1 {
   margin: 0 0 10px;
   font-size: 42px;
+  max-width: 680px;
+  line-height: 1.05;
 }
 
 .hero p {
@@ -67,12 +125,41 @@ button {
   gap: 18px;
 }
 
+.role-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.role-pill {
+  border: 1px solid var(--border);
+  background: rgba(16, 26, 39, 0.82);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 600;
+}
+
+.role-pill.active {
+  border-color: rgba(94, 234, 212, 0.36);
+  background: rgba(94, 234, 212, 0.14);
+  color: #cffcf6;
+}
+
 .card {
   grid-column: span 12;
   background: rgba(16, 26, 39, 0.92);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 18px;
+}
+
+.role-banner {
+  margin-bottom: 18px;
+  background:
+    linear-gradient(135deg, rgba(94, 234, 212, 0.08), transparent 45%),
+    rgba(16, 26, 39, 0.92);
 }
 
 .card.half {
@@ -162,6 +249,22 @@ button {
   gap: 12px;
 }
 
+.offer-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.offer-chip {
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  background: rgba(96, 165, 250, 0.12);
+  color: #d7e7ff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  text-align: left;
+}
+
 .stat {
   padding: 14px;
   border-radius: 14px;
@@ -178,6 +281,10 @@ button {
 .mono {
   font-family: Consolas, monospace;
   word-break: break-all;
+}
+
+.contract-meta {
+  margin-top: 16px;
 }
 
 .log {
@@ -202,5 +309,13 @@ button {
 
   .hero {
     flex-direction: column;
+  }
+
+  .hero-product {
+    padding: 22px;
+  }
+
+  .hero h1 {
+    font-size: 34px;
   }
 }

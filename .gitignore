@@ -5,3 +5,4 @@ contracts/artifacts/
 contracts/cache/
 contracts/types/
 contracts/.env
+.next
