@@ -11,6 +11,7 @@ export default function MarketplacePage() {
     connect,
     refresh,
     busy,
+    loading,
     tokenInfo,
     offers,
     isAdminWallet,
@@ -19,9 +20,8 @@ export default function MarketplacePage() {
   } = useHackfi();
 
   const [selectedOffer, setSelectedOffer] = useState("");
-  const [approveAmount, setApproveAmount] = useState("900");
   const [buyAmount, setBuyAmount] = useState("500");
-  const [feedback, setFeedback] = useState("Explore as ofertas reais da PrizeFactory conectando sua wallet.");
+  const [feedback, setFeedback] = useState("");
   const [hasError, setHasError] = useState(false);
 
   const activeOffer = useMemo(
@@ -29,15 +29,13 @@ export default function MarketplacePage() {
     [offers, selectedOffer]
   );
 
-  const activeCount = offers.filter((offer) => offer.statusCode === 1 || offer.statusCode === 3).length;
+  const activeCount = offers.filter((offer) => offer.statusCode === 0 || offer.statusCode === 1).length;
   const totalFunding = offers.reduce((sum, offer) => sum + Number(offer.fundedAmount || "0"), 0);
 
-  async function handleApproveAndBuy() {
+  async function handleBuy() {
     if (!activeOffer) return;
     try {
       setHasError(false);
-      setFeedback("Aprovando hfUSD para a offer selecionada...");
-      await approve(activeOffer.address, approveAmount);
       setFeedback("Executando compra...");
       await buy(activeOffer.address, buyAmount);
       setFeedback("Compra concluida.");
@@ -49,7 +47,7 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <TopNav active="Premios" actionLabel={account ? "Abrir painel" : "Conectar carteira"} actionHref={account ? "/investor" : "/marketplace"} />
+      <TopNav active="Marketplace" actionLabel={account ? "Abrir painel" : "Conectar carteira"} actionHref={account ? "/investor" : "/marketplace"} />
       <main className="mx-auto max-w-7xl px-6 pt-28 pb-20 md:px-8">
         <section className="space-y-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -72,11 +70,20 @@ export default function MarketplacePage() {
             tokenBalance={tokenInfo?.balance}
             tokenSymbol={tokenInfo?.symbol}
             isAdminWallet={isAdminWallet}
-            onConnect={() => void connect()}
-            onRefresh={() => void refresh()}
           />
 
-          <ActionFeedback message={busy ? "Executando transacao..." : feedback} error={hasError} />
+          {loading && (
+            <div className="rounded-2xl border border-white/8 bg-surface-container-low px-4 py-3 text-sm text-zinc-200">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                Carregando dados dos contratos...
+              </div>
+            </div>
+          )}
+
+          {(busy || feedback) && (
+            <ActionFeedback message={busy ? "Executando transacao..." : feedback} error={hasError} />
+          )}
         </section>
 
         <section className="mt-10 grid gap-8 xl:grid-cols-[0.92fr_1.35fr]">
@@ -88,21 +95,20 @@ export default function MarketplacePage() {
               </h2>
             </div>
             <p className="mt-3 text-sm leading-7 text-on-surface-variant">
-              Selecione uma oferta, aprove hfUSD para o contrato e execute a compra dos recibos.
+              Selecione uma oferta e a quantidade de recibos. A compra transfere hfUSD automaticamente.
             </p>
 
             <div className="mt-8 space-y-5">
               <Field label="Offer address" value={selectedOffer} onChange={setSelectedOffer} />
-              <Field label="Aprovar hfUSD" value={approveAmount} onChange={setApproveAmount} />
               <Field label="Recibos a comprar" value={buyAmount} onChange={setBuyAmount} />
             </div>
 
             <button
-              onClick={() => void handleApproveAndBuy()}
+              onClick={() => void handleBuy()}
               disabled={!activeOffer || busy}
               className="mt-8 w-full rounded-full bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-6 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
             >
-              Aprovar e comprar
+              Comprar recibos
             </button>
           </div>
 

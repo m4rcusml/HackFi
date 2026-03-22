@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono, Space_Grotesk } from "next/font/google";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,8 +19,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MONAD KINETIC",
-  description: "Frontend prototype for the MONAD KINETIC ecosystem.",
+  title: "HackFi",
+  description: "Antecipacao de premios na Monad",
 };
 
 export default function RootLayout({
@@ -33,7 +34,9 @@ export default function RootLayout({
       className={`${inter.variable} ${spaceGrotesk.variable} ${robotoMono.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

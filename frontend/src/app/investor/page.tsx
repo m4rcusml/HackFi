@@ -1,27 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AppShell, AppSidebar, Chip, MetricCard, SectionHeading } from "@/components/kinetic";
+import { Chip, MetricCard, SectionHeading, TopNav } from "@/components/kinetic";
 import { ActionFeedback, EmptyState, OfferCard, WalletPanel } from "@/components/hackfi-panels";
 import { ProtectedRoute } from "@/components/auth-guard";
-import { getSession } from "@/lib/auth";
-import { formatAddress, useHackfi } from "@/hooks/use-hackfi";
-
-const sideItems = [
-  { href: "/investor", label: "Painel", icon: "grid_view" },
-  { href: "/marketplace", label: "Premios ativos", icon: "military_tech" },
-  { href: "/investor", label: "Vaults de yield", icon: "account_balance_wallet" },
-  { href: "/admin", label: "Governanca", icon: "gavel" },
-  { href: "/winner", label: "Configuracoes", icon: "settings" },
-];
+import { useHackfi } from "@/hooks/use-hackfi";
 
 export default function InvestorPage() {
-  const session = getSession();
   const {
     account,
     connect,
     refresh,
     busy,
+    loading,
     tokenInfo,
     offers,
     isAdminWallet,
@@ -33,10 +24,9 @@ export default function InvestorPage() {
   } = useHackfi();
 
   const [selectedOffer, setSelectedOffer] = useState("");
-  const [approveAmount, setApproveAmount] = useState("900");
   const [buyAmount, setBuyAmount] = useState("500");
   const [mintAmount, setMintAmount] = useState("1000");
-  const [feedback, setFeedback] = useState("Conecte sua wallet para explorar as ofertas onchain.");
+  const [feedback, setFeedback] = useState("");
   const [hasError, setHasError] = useState(false);
   const [quote, setQuote] = useState("0");
 
@@ -57,19 +47,6 @@ export default function InvestorPage() {
   );
 
   const claimableOffers = offers.filter((offer) => Number(offer.claimable) > 0);
-
-  async function handleApprove() {
-    if (!activeOffer) return;
-    try {
-      setHasError(false);
-      setFeedback("Aprovando hfUSD para a oferta selecionada...");
-      await approve(activeOffer.address, approveAmount);
-      setFeedback("Approve confirmado.");
-    } catch (error) {
-      setHasError(true);
-      setFeedback(error instanceof Error ? error.message : "Falha ao aprovar.");
-    }
-  }
 
   async function handleBuy() {
     if (!activeOffer) return;
@@ -111,30 +88,22 @@ export default function InvestorPage() {
   }
 
   return (
-    <ProtectedRoute allowedRole="investidor">
-      <AppShell
-        topActive="Investidores"
-        sidebar={
-          <AppSidebar
-            profileName={session?.name || "Investidor"}
-            profileMeta={account ? formatAddress(account) : "wallet desconectada"}
-            items={sideItems}
-          />
-        }
-      >
-        <SectionHeading
-          title="Painel do investidor"
-          subtitle="Acompanhe oportunidades reais, aprove hfUSD, compre recibos e saque o retorno na liquidacao."
-          action={<Chip tone="tertiary">Portfolio onchain</Chip>}
-        />
+    <ProtectedRoute>
+      <div className="min-h-screen bg-background text-foreground">
+        <TopNav active="Investidor" />
+        <main className="mx-auto max-w-7xl px-6 pt-28 pb-20 md:px-8">
+          <div className="mx-auto max-w-[1280px] space-y-10">
+            <SectionHeading
+              title="Painel do investidor"
+              subtitle="Acompanhe oportunidades reais, aprove hfUSD, compre recibos e saque o retorno na liquidacao."
+              action={<Chip tone="tertiary">Portfolio onchain</Chip>}
+            />
 
         <WalletPanel
           account={account}
           tokenBalance={tokenInfo?.balance}
           tokenSymbol={tokenInfo?.symbol}
           isAdminWallet={isAdminWallet}
-          onConnect={() => void connect()}
-          onRefresh={() => void refresh()}
         />
 
         <section className="grid gap-6 md:grid-cols-4">
@@ -156,7 +125,18 @@ export default function InvestorPage() {
           />
         </section>
 
-        <ActionFeedback message={busy ? "Executando transacao..." : feedback} error={hasError} />
+        {loading && (
+          <div className="rounded-2xl border border-white/8 bg-surface-container-low px-4 py-3 text-sm text-zinc-200">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              Carregando dados dos contratos...
+            </div>
+          </div>
+        )}
+
+        {(busy || feedback) && (
+          <ActionFeedback message={busy ? "Executando transacao..." : feedback} error={hasError} />
+        )}
 
         <section className="grid gap-8 xl:grid-cols-[1fr_1.35fr]">
           <div className="rounded-[2rem] border border-white/5 bg-surface-container-low p-8">
@@ -167,13 +147,12 @@ export default function InvestorPage() {
               Comprar fracao do premio
             </h2>
             <p className="mt-2 text-sm leading-7 text-on-surface-variant">
-              Primeiro aprove o gasto do hfUSD para a offer selecionada. Depois envie a quantidade de recibos que deseja comprar.
+              Selecione a oferta e a quantidade de recibos que deseja comprar. A compra transfere hfUSD automaticamente.
             </p>
 
             <div className="mt-8 space-y-5">
               <Field label="Mint hfUSD demo" value={mintAmount} onChange={setMintAmount} />
               <Field label="Offer address" value={selectedOffer} onChange={setSelectedOffer} />
-              <Field label="Aprovar hfUSD" value={approveAmount} onChange={setApproveAmount} />
               <Field label="Recibos a comprar" value={buyAmount} onChange={setBuyAmount} />
             </div>
 
@@ -184,13 +163,6 @@ export default function InvestorPage() {
                 className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-headline text-sm font-semibold text-white disabled:opacity-60"
               >
                 Mintar hfUSD
-              </button>
-              <button
-                onClick={() => void handleApprove()}
-                disabled={!activeOffer || busy}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-headline text-sm font-semibold text-white disabled:opacity-60"
-              >
-                Aprovar compra
               </button>
               <button
                 onClick={() => void handleBuy()}
@@ -213,7 +185,7 @@ export default function InvestorPage() {
             {offers.length === 0 ? (
               <EmptyState
                 title="Nenhuma oferta encontrada"
-                text="Assim que um hacker criar ofertas e o admin ativar, elas aparecerao aqui para compra."
+                text="Assim que um hacker criar ofertas, elas aparecerao aqui para compra."
               />
             ) : (
               offers.map((offer) => (
@@ -233,7 +205,9 @@ export default function InvestorPage() {
             )}
           </div>
         </section>
-      </AppShell>
+          </div>
+        </main>
+      </div>
     </ProtectedRoute>
   );
 }

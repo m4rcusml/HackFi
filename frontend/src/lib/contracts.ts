@@ -12,17 +12,15 @@ export const MONAD_TESTNET = {
 };
 
 export const ADDRESSES = {
-  token: "0x0849c76D22704C4427aC155712d0b3A911a230fb",
-  factory: "0x9b293Eaf3441DA20f9D113E20A7593407c31700C",
+  token: "0xE0f36c09978b7Cf6f02dDf5080076EfA37D892AA",
+  factory: "0xe09D7e6fd49F650521c7fE29AB9a693aDF952B0a",
 } as const;
 
 export const STATUS_LABELS: Record<number, string> = {
-  0: "Pending",
-  1: "Active",
-  2: "Rejected",
-  3: "Funded",
-  4: "Settled",
-  5: "Cancelled",
+  0: "Active",
+  1: "Funded",
+  2: "Settled",
+  3: "Cancelled",
 };
 
 export const FACTORY_ABI = [

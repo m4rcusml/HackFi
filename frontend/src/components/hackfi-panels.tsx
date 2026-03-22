@@ -9,46 +9,24 @@ export function WalletPanel({
   tokenSymbol,
   tokenBalance,
   isAdminWallet,
-  onConnect,
-  onRefresh,
 }: {
   account: string;
   tokenSymbol?: string;
   tokenBalance?: string;
   isAdminWallet: boolean;
-  onConnect: () => void;
-  onRefresh: () => void;
 }) {
   return (
     <section className="grid gap-4 md:grid-cols-12 md:gap-6">
       <div className="glass-panel kinetic-border rounded-3xl p-5 md:col-span-7 md:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-              Wallet conectada
-            </p>
-            <h2 className="mt-2 break-all font-headline text-xl font-black text-white sm:text-2xl">
-              {account || "Conecte sua MetaMask"}
-            </h2>
-            <p className="mt-2 text-sm text-on-surface-variant">
-              Chain: Monad Testnet. Todas as acoes desta interface escrevem no contrato real.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <button
-              onClick={onConnect}
-              className="rounded-2xl bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-5 py-3 font-headline text-sm font-bold text-white"
-            >
-              {account ? "Trocar wallet" : "Conectar carteira"}
-            </button>
-            <button
-              onClick={onRefresh}
-              className="rounded-2xl border border-white/10 bg-surface-container-low px-5 py-3 text-sm font-semibold text-white"
-            >
-              Atualizar
-            </button>
-          </div>
-        </div>
+        <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+          Wallet conectada
+        </p>
+        <h2 className="mt-2 font-headline text-xl font-black text-white sm:text-2xl">
+          {account ? formatAddress(account) : "Conecte sua MetaMask"}
+        </h2>
+        <p className="mt-2 text-sm text-on-surface-variant">
+          Chain: Monad Testnet. Todas as acoes desta interface escrevem no contrato real.
+        </p>
       </div>
 
       <div className="glass-panel kinetic-border rounded-3xl p-5 md:col-span-3 md:p-6">

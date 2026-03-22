@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { clearSession, getDashboardPath, getSession, UserRole } from "@/lib/auth";
+import { ReactNode } from "react";
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 type NavItem = {
   href: string;
@@ -16,115 +15,40 @@ type SideItem = {
   icon: string;
 };
 
-function formatWallet(value: string) {
-  return `${value.slice(0, 6)}...${value.slice(-4)}`;
-}
-
 export function Brand() {
   return (
     <Link
       href="/"
       className="bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text font-headline text-2xl font-black tracking-tight text-transparent"
     >
-      MONAD KINETIC
+      HackFi
     </Link>
   );
 }
 
+const defaultItems: NavItem[] = [
+  { href: "/", label: "Ecossistema" },
+  { href: "/marketplace", label: "Marketplace" },
+  { href: "/winner", label: "Vencedor" },
+  { href: "/investor", label: "Investidor" },
+];
+
 export function TopNav({
   active,
-  actionLabel = "Conectar carteira",
-  actionHref = "/marketplace",
-  authHref = "/login",
-  authLabel = "Entrar",
+  actionLabel,
+  actionHref,
 }: {
   active?: string;
   actionLabel?: string;
   actionHref?: string;
-  authHref?: string;
-  authLabel?: string;
 }) {
-  const router = useRouter();
-  const [sessionName, setSessionName] = useState("");
-  const [sessionRole, setSessionRole] = useState<UserRole | null>(null);
-  const [sessionHref, setSessionHref] = useState(authHref);
-  const [wallet, setWallet] = useState("");
-
-  useEffect(() => {
-    const sync = async () => {
-      const session = getSession();
-      setSessionName(session?.name || "");
-      setSessionRole(session?.role || null);
-      setSessionHref(session ? getDashboardPath(session.role) : authHref);
-
-      const ethereum = window.ethereum;
-      if (!ethereum) {
-        setWallet("");
-        return;
-      }
-
-      const accounts = (await ethereum.request({ method: "eth_accounts" })) as string[];
-      setWallet(accounts[0] || "");
-    };
-
-    void sync();
-
-    const handleSession = () => {
-      void sync();
-    };
-
-    const handleAccounts = (accounts: string[]) => {
-      setWallet(accounts[0] || "");
-    };
-
-    window.addEventListener("hackfi-session-changed", handleSession);
-    window.addEventListener("storage", handleSession);
-    window.ethereum?.on("accountsChanged", handleAccounts);
-
-    return () => {
-      window.removeEventListener("hackfi-session-changed", handleSession);
-      window.removeEventListener("storage", handleSession);
-      window.ethereum?.removeListener("accountsChanged", handleAccounts);
-    };
-  }, [authHref]);
-
-  const resolvedAuthLabel = useMemo(() => sessionName || authLabel, [authLabel, sessionName]);
-  const resolvedAuthHref = useMemo(() => sessionHref || authHref, [authHref, sessionHref]);
-  const items: NavItem[] = useMemo(() => {
-    if (sessionRole === "investidor") {
-      return [
-        { href: "/investor", label: "Meu painel" },
-        { href: "/marketplace", label: "Marketplace" },
-      ];
-    }
-
-    if (sessionRole === "vencedor") {
-      return [{ href: "/winner", label: "Minha antecipacao" }];
-    }
-
-    if (sessionRole === "admin") {
-      return [{ href: "/admin", label: "Operacoes" }];
-    }
-
-    return [
-      { href: "/", label: "Ecossistema" },
-      { href: "/marketplace", label: "Premios" },
-      { href: "/cadastro", label: "Perfis" },
-    ];
-  }, [sessionRole]);
-
-  const handleLogout = () => {
-    clearSession();
-    router.replace("/");
-  };
-
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#131313]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-20 w-full max-w-[1440px] items-center justify-between px-6 md:px-8">
         <div className="flex items-center gap-10">
           <Brand />
           <nav className="hidden items-center gap-8 font-headline text-sm tracking-tight md:flex">
-            {items.map((item) => (
+            {defaultItems.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
@@ -140,31 +64,18 @@ export function TopNav({
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          {wallet ? (
-            <span className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-300 sm:inline-flex">
-              {formatWallet(wallet)}
-            </span>
-          ) : null}
-          <Link
-            href={resolvedAuthHref}
-            className="hidden text-sm font-medium text-on-surface transition-colors hover:text-primary sm:inline-flex"
-          >
-            {resolvedAuthLabel}
-          </Link>
-          {sessionName ? (
-            <button
-              onClick={handleLogout}
-              className="hidden rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition-colors hover:bg-white/10 sm:inline-flex"
+          {actionLabel && actionHref ? (
+            <Link
+              href={actionHref}
+              className="hidden rounded-xl bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-5 py-2.5 font-headline text-sm font-bold text-white transition-transform active:scale-95 sm:inline-flex"
             >
-              Sair
-            </button>
+              {actionLabel}
+            </Link>
           ) : null}
-          <Link
-            href={actionHref}
-            className="rounded-xl bg-[linear-gradient(135deg,#6e54ff_0%,#0566d9_100%)] px-5 py-2.5 font-headline text-sm font-bold text-white transition-transform active:scale-95"
-          >
-            {actionLabel}
-          </Link>
+          <ConnectButton
+            chainStatus="icon"
+            showBalance={false}
+          />
         </div>
       </div>
     </header>
@@ -178,7 +89,7 @@ export function Footer() {
     <footer className="border-t border-white/5 bg-[#131313] py-12">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-6 px-8">
         <div className="font-headline text-lg font-black tracking-[0.18em] text-white">
-          MONAD KINETIC
+          HackFi
         </div>
         <div className="flex flex-wrap justify-center gap-8 font-mono text-xs uppercase tracking-[0.25em] text-zinc-600">
           {links.map((link) => (
@@ -188,7 +99,7 @@ export function Footer() {
           ))}
         </div>
         <p className="border-t border-white/5 pt-6 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-700">
-          2024 MONAD KINETIC. Construido para antecipacao de premios.
+          2026 HackFi. Construido para antecipacao de premios na Monad.
         </p>
       </div>
     </footer>

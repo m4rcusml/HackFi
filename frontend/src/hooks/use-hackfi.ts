@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { ethers } from "ethers";
-import { ADDRESSES, FACTORY_ABI, MONAD_TESTNET, OFFER_ABI, STATUS_LABELS, TOKEN_ABI } from "@/lib/contracts";
+import { ADDRESSES, FACTORY_ABI, OFFER_ABI, STATUS_LABELS, TOKEN_ABI } from "@/lib/contracts";
 
 type TokenInfo = {
   name: string;
@@ -36,7 +37,7 @@ export type OfferDetails = {
 
 export function formatAddress(value?: string) {
   if (!value) return "-";
-  return `${value.slice(0, 6)}...${value.slice(-4)}`;
+  return `${value.slice(0, 7)}...${value.slice(-3)}`;
 }
 
 function formatAmount(value: bigint, decimals: number) {
@@ -78,68 +79,100 @@ async function loadAllOfferAddresses(factoryRead: ethers.Contract) {
 }
 
 export function useHackfi() {
+  const { address: account, isConnected } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
+
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
-  const [account, setAccount] = useState("");
   const [factoryOwner, setFactoryOwner] = useState("");
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
   const [offers, setOffers] = useState<OfferDetails[]>([]);
   const [participantOffers, setParticipantOffers] = useState<OfferDetails[]>([]);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const factory = useMemo(
-    () => (signer ? new ethers.Contract(ADDRESSES.factory, FACTORY_ABI, signer) : null),
-    [signer]
-  );
+  // Sync ethers provider/signer when wallet is connected
+  useEffect(() => {
+    console.log("🔌 Wallet connection state:", { isConnected, account });
 
-  const factoryRead = useMemo(
-    () => ((provider || signer) ? new ethers.Contract(ADDRESSES.factory, FACTORY_ABI, provider || signer) : null),
-    [provider, signer]
-  );
+    if (!isConnected || !account) {
+      console.log("❌ Wallet not connected, clearing provider/signer");
+      setProvider(null);
+      setSigner(null);
+      return;
+    }
 
-  const paymentToken = useMemo(
-    () => (signer ? new ethers.Contract(ADDRESSES.token, TOKEN_ABI, signer) : null),
-    [signer]
-  );
+    const setupProvider = async () => {
+      try {
+        console.log("⚙️ Setting up ethers provider...");
 
-  const paymentTokenRead = useMemo(
-    () => ((provider || signer) ? new ethers.Contract(ADDRESSES.token, TOKEN_ABI, provider || signer) : null),
-    [provider, signer]
-  );
+        // RainbowKit uses window.ethereum, so we can use it with ethers
+        if (!window.ethereum) {
+          console.warn("⚠️ window.ethereum not available");
+          return;
+        }
+
+        const ethersProvider = new ethers.BrowserProvider(window.ethereum);
+        console.log("✅ Ethers provider created");
+
+        const ethersSigner = await ethersProvider.getSigner();
+        console.log("✅ Ethers signer created for:", await ethersSigner.getAddress());
+
+        setProvider(ethersProvider);
+        setSigner(ethersSigner);
+        console.log("✅ Provider and signer set successfully");
+      } catch (error) {
+        console.error("❌ Failed to setup ethers provider:", error);
+      }
+    };
+
+    void setupProvider();
+  }, [isConnected, account]);
+
+  const factory = useMemo(() => {
+    if (!signer) {
+      console.log("⚠️ Factory: No signer available");
+      return null;
+    }
+    console.log("✅ Factory contract created with signer");
+    return new ethers.Contract(ADDRESSES.factory, FACTORY_ABI, signer);
+  }, [signer]);
+
+  const factoryRead = useMemo(() => {
+    if (!provider && !signer) {
+      console.log("⚠️ FactoryRead: No provider or signer available");
+      return null;
+    }
+    console.log("✅ FactoryRead contract created");
+    return new ethers.Contract(ADDRESSES.factory, FACTORY_ABI, provider || signer);
+  }, [provider, signer]);
+
+  const paymentToken = useMemo(() => {
+    if (!signer) {
+      console.log("⚠️ PaymentToken: No signer available");
+      return null;
+    }
+    console.log("✅ PaymentToken contract created with signer");
+    return new ethers.Contract(ADDRESSES.token, TOKEN_ABI, signer);
+  }, [signer]);
+
+  const paymentTokenRead = useMemo(() => {
+    if (!provider && !signer) {
+      console.log("⚠️ PaymentTokenRead: No provider or signer available");
+      return null;
+    }
+    console.log("✅ PaymentTokenRead contract created");
+    return new ethers.Contract(ADDRESSES.token, TOKEN_ABI, provider || signer);
+  }, [provider, signer]);
 
   const isAdminWallet = !!account && !!factoryOwner && account.toLowerCase() === factoryOwner.toLowerCase();
 
-  const switchToMonad = useCallback(async () => {
-    if (!window.ethereum) throw new Error("MetaMask nao encontrada.");
-
-    try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: MONAD_TESTNET.chainIdHex }],
-      });
-    } catch (error: unknown) {
-      const walletError = error as { code?: number };
-      if (walletError.code !== 4902) throw error;
-      await window.ethereum.request({
-        method: "wallet_addEthereumChain",
-        params: [MONAD_TESTNET],
-      });
-    }
-  }, []);
-
+  // Connect function is no longer needed - RainbowKit handles this
   const connect = useCallback(async () => {
-    if (!window.ethereum) throw new Error("MetaMask nao encontrada.");
-
-    await switchToMonad();
-    const nextProvider = new ethers.BrowserProvider(window.ethereum);
-    await nextProvider.send("eth_requestAccounts", []);
-    const nextSigner = await nextProvider.getSigner();
-    const nextAccount = await nextSigner.getAddress();
-
-    setProvider(nextProvider);
-    setSigner(nextSigner);
-    setAccount(nextAccount);
-  }, [switchToMonad]);
+    // This is now handled by RainbowKit's ConnectButton
+    console.log("Use the Connect Wallet button in the navbar");
+  }, []);
 
   const readOffer = useCallback(
     async (offerAddress: string, decimals: number, accountAddress: string) => {
@@ -198,17 +231,28 @@ export function useHackfi() {
   );
 
   const refresh = useCallback(async () => {
-    if (!factoryRead || !paymentTokenRead || !account) return;
+    console.log("🔄 Refresh called:", {
+      hasFactoryRead: !!factoryRead,
+      hasPaymentTokenRead: !!paymentTokenRead,
+      account
+    });
 
+    if (!factoryRead || !paymentTokenRead || !account) {
+      console.log("⚠️ Refresh skipped - missing dependencies");
+      return;
+    }
+
+    setLoading(true);
     try {
+      console.log("📡 Fetching data from contracts...");
       const [name, symbol, decimalsValue, balance, owner, ownOffers, tokenOwner] = await Promise.all([
-        paymentTokenRead.name(),
-        paymentTokenRead.symbol(),
-        paymentTokenRead.decimals(),
-        paymentTokenRead.balanceOf(account),
-        factoryRead.owner(),
-        factoryRead.getParticipantOffers(account),
-        paymentTokenRead.owner().catch(() => ""),
+        safeCall(() => paymentTokenRead.name(), "hfUSD"),
+        safeCall(() => paymentTokenRead.symbol(), "hfUSD"),
+        safeCall(() => paymentTokenRead.decimals(), BigInt(18)),
+        safeCall(() => paymentTokenRead.balanceOf(account), BigInt(0)),
+        safeCall(() => factoryRead.owner(), ethers.ZeroAddress),
+        safeCall(() => factoryRead.getParticipantOffers(account), [] as string[]),
+        safeCall(() => paymentTokenRead.owner(), ""),
       ]);
 
       const decimals = Number(decimalsValue);
@@ -230,66 +274,39 @@ export function useHackfi() {
 
       setOffers(allOffers);
       setParticipantOffers(allOffers.filter((offer) => ownOfferSet.has(offer.address.toLowerCase())));
+      console.log("✅ Refresh completed successfully:", {
+        tokenInfo: { name, symbol, decimals },
+        offersCount: allOffers.length,
+        participantOffersCount: allOffers.filter((offer) => ownOfferSet.has(offer.address.toLowerCase())).length
+      });
     } catch (error) {
-      console.error("Falha ao atualizar dados onchain", error);
+      console.error("❌ Falha ao atualizar dados onchain:", error);
+    } finally {
+      setLoading(false);
     }
   }, [account, factoryRead, paymentTokenRead, readOffer]);
 
+  // Refresh data when account or signer changes
   useEffect(() => {
-    if (!window.ethereum) return;
-
-    void (async () => {
-      try {
-        const ethereum = window.ethereum;
-        if (!ethereum) return;
-
-        const existingAccounts = (await ethereum.request({ method: "eth_accounts" })) as string[];
-        if (!existingAccounts?.length) return;
-
-        const nextProvider = new ethers.BrowserProvider(ethereum);
-        const nextSigner = await nextProvider.getSigner();
-        const nextAccount = await nextSigner.getAddress();
-
-        setProvider(nextProvider);
-        setSigner(nextSigner);
-        setAccount(nextAccount);
-      } catch (error) {
-        console.error("Falha ao restaurar wallet conectada", error);
-      }
-    })();
-
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (accounts.length === 0) {
-        setSigner(null);
-        setProvider(null);
-        setAccount("");
-        setOffers([]);
-        setParticipantOffers([]);
-        return;
-      }
-
-      void connect();
-    };
-
-    const handleChainChanged = () => {
-      void connect();
-    };
-
-    window.ethereum.on("accountsChanged", handleAccountsChanged);
-    window.ethereum.on("chainChanged", handleChainChanged);
-
-    return () => {
-      window.ethereum?.removeListener("accountsChanged", handleAccountsChanged);
-      window.ethereum?.removeListener("chainChanged", handleChainChanged);
-    };
-  }, [connect]);
-
-  useEffect(() => {
-    if (!signer || !account) return;
-    void refresh().catch((error) => {
-      console.error("Falha no effect de refresh", error);
+    console.log("🔄 Refresh effect triggered:", {
+      isConnected,
+      hasSigner: !!signer,
+      account
     });
-  }, [account, refresh, signer]);
+
+    if (!isConnected || !signer || !account) {
+      console.log("⚠️ Clearing state - wallet not ready");
+      setOffers([]);
+      setParticipantOffers([]);
+      setTokenInfo(null);
+      return;
+    }
+
+    console.log("▶️ Calling refresh...");
+    void refresh().catch((error) => {
+      console.error("❌ Falha no effect de refresh:", error);
+    });
+  }, [account, isConnected, refresh, signer]);
 
   const run = useCallback(async <T,>(operation: () => Promise<T>) => {
     setBusy(true);
@@ -315,7 +332,7 @@ export function useHackfi() {
       discountBps: string;
       expectedPaymentDate: string;
     }) => {
-      if (!factory || !tokenInfo) throw new Error("Conecte a wallet primeiro.");
+      if (!factory || !tokenInfo) throw new Error("Wallet nao conectada ou rede incorreta. Conecte na Monad Testnet.");
 
       return run(() =>
         factory.createOffer(
@@ -333,7 +350,7 @@ export function useHackfi() {
 
   const mint = useCallback(
     async (recipient: string, amount: string) => {
-      if (!paymentToken || !tokenInfo) throw new Error("Conecte a wallet primeiro.");
+      if (!paymentToken || !tokenInfo) throw new Error("Wallet nao conectada ou rede incorreta. Conecte na Monad Testnet.");
       return run(() => paymentToken.mint(recipient, ethers.parseUnits(amount || "0", tokenInfo.decimals)));
     },
     [paymentToken, run, tokenInfo]
@@ -341,7 +358,7 @@ export function useHackfi() {
 
   const approve = useCallback(
     async (spender: string, amount: string) => {
-      if (!paymentToken || !tokenInfo) throw new Error("Conecte a wallet primeiro.");
+      if (!paymentToken || !tokenInfo) throw new Error("Wallet nao conectada ou rede incorreta. Conecte na Monad Testnet.");
       return run(() => paymentToken.approve(spender, ethers.parseUnits(amount || "0", tokenInfo.decimals)));
     },
     [paymentToken, run, tokenInfo]
@@ -349,7 +366,7 @@ export function useHackfi() {
 
   const buy = useCallback(
     async (offerAddress: string, amount: string) => {
-      if (!signer || !tokenInfo) throw new Error("Conecte a wallet primeiro.");
+      if (!signer || !tokenInfo) throw new Error("Wallet nao conectada ou rede incorreta. Conecte na Monad Testnet.");
       const offer = new ethers.Contract(offerAddress, OFFER_ABI, signer);
       return run(() => offer.buy(ethers.parseUnits(amount || "0", tokenInfo.decimals)));
     },
@@ -358,35 +375,11 @@ export function useHackfi() {
 
   const claim = useCallback(
     async (offerAddress: string) => {
-      if (!signer) throw new Error("Conecte a wallet primeiro.");
+      if (!signer) throw new Error("Wallet nao conectada ou rede incorreta. Conecte na Monad Testnet.");
       const offer = new ethers.Contract(offerAddress, OFFER_ABI, signer);
       return run(() => offer.claim());
     },
     [run, signer]
-  );
-
-  const activateOffer = useCallback(
-    async (offerAddress: string, proofSeed: string) => {
-      if (!factory) throw new Error("Conecte a wallet primeiro.");
-      return run(() => factory.activateOffer(offerAddress, ethers.id(`validated-${proofSeed}`)));
-    },
-    [factory, run]
-  );
-
-  const rejectOffer = useCallback(
-    async (offerAddress: string) => {
-      if (!factory) throw new Error("Conecte a wallet primeiro.");
-      return run(() => factory.rejectOffer(offerAddress));
-    },
-    [factory, run]
-  );
-
-  const settleOffer = useCallback(
-    async (offerAddress: string, amount: string) => {
-      if (!factory || !tokenInfo) throw new Error("Conecte a wallet primeiro.");
-      return run(() => factory.settleOffer(offerAddress, ethers.parseUnits(amount || "0", tokenInfo.decimals)));
-    },
-    [factory, run, tokenInfo]
   );
 
   const getQuote = useCallback(
@@ -414,10 +407,11 @@ export function useHackfi() {
   );
 
   return {
-    account,
+    account: account || "",
     connect,
     refresh,
     busy,
+    loading,
     provider,
     signer,
     tokenInfo,
@@ -432,9 +426,6 @@ export function useHackfi() {
     buy,
     claim,
     createOffer,
-    activateOffer,
-    rejectOffer,
-    settleOffer,
     getQuote,
   };
 }

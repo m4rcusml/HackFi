@@ -1,35 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Chip, Footer, Icon, TopNav } from "@/components/kinetic";
-import { getDashboardPath, getSession } from "@/lib/auth";
 
 const flowCards = [
   {
     title: "Hacker",
     text: "Registra o premio, anexa prova e links do projeto, cria a antecipacao e acompanha os micropagamentos na wallet.",
-    cta: "Criar conta de vencedor",
-    href: "/cadastro/vencedor",
+    cta: "Acessar painel",
+    href: "/winner",
     icon: "military_tech",
     bullets: ["Criar antecipacao", "Acompanhar funding", "Receber liberacoes em tranches"],
   },
   {
     title: "Investidor",
     text: "Avalia ofertas verificadas, aprova hfUSD, compra fracoes do premio e recebe o claim quando a liquidacao acontece.",
-    cta: "Criar conta de investidor",
-    href: "/cadastro/investidor",
+    cta: "Acessar painel",
+    href: "/investor",
     icon: "monitoring",
     bullets: ["Filtrar oportunidades", "Comprar recibos", "Sacar retorno proporcional"],
-  },
-  {
-    title: "Admin de Hackathon",
-    text: "Valida vencedores, ativa ou rejeita ofertas, abastece o escrow e confirma a liquidacao final do premio.",
-    cta: "Criar conta de admin",
-    href: "/cadastro/admin",
-    icon: "admin_panel_settings",
-    bullets: ["Validar provas", "Ativar ofertas", "Liquidar premios"],
   },
 ];
 
@@ -39,62 +28,26 @@ const steps = [
     text: "O hacker informa hackathon, valor do premio, desconto e hash da prova. Isso vira uma oferta onchain.",
   },
   {
-    title: "2. Admin valida",
-    text: "A organizacao confirma a prova e ativa a oferta. A partir daqui os investidores podem comprar fracoes.",
-  },
-  {
-    title: "3. Investidor financia",
+    title: "2. Investidor financia",
     text: "Cada compra gera recibos fracionados e libera capital em tranches para o vencedor conforme o funding avanca.",
   },
   {
-    title: "4. Liquidacao e claim",
-    text: "Quando o premio chega, o admin liquida a oferta e os investidores sacam o retorno diretamente na carteira.",
+    title: "3. Liquidacao e claim",
+    text: "Quando o prazo chega, os investidores sacam o retorno proporcional diretamente na carteira.",
   },
 ];
 
 export default function Home() {
-  const router = useRouter();
-  const [session, setSession] = useState<ReturnType<typeof getSession>>(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const nextSession = getSession();
-    setSession(nextSession);
-    setReady(true);
-
-    if (nextSession) {
-      router.replace(getDashboardPath(nextSession.role));
-    }
-  }, [router]);
-
-  if (!ready) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-zinc-400">
-        Carregando experiencia...
-      </div>
-    );
-  }
-
-  if (session) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-zinc-400">
-        Redirecionando para seu painel...
-      </div>
-    );
-  }
-
-  const dashboardHref = "/cadastro";
-  const heroPrimary = "Criar minha conta";
-  const heroSecondary = "Ver oportunidades";
+  const dashboardHref = "/marketplace";
+  const heroPrimary = "Ver oportunidades";
+  const heroSecondary = "Explorar marketplace";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <TopNav
         active="Ecossistema"
-        actionLabel="Comecar agora"
+        actionLabel="Explorar"
         actionHref={dashboardHref}
-        authHref="/login"
-        authLabel="Entrar"
       />
 
       <main className="relative overflow-hidden pt-20">
@@ -115,9 +68,9 @@ export default function Home() {
                 LIQUIDE.
               </h1>
               <p className="max-w-3xl text-lg font-light leading-8 text-on-surface-variant md:text-2xl">
-                O HackFi conecta vencedores de hackathons, investidores e operadores em um fluxo unico:
-                o vencedor transforma um premio futuro em liquidez agora, o investidor compra com desconto
-                e o admin garante validacao e liquidacao final.
+                O HackFi conecta vencedores de hackathons e investidores em um fluxo unico:
+                o vencedor transforma um premio futuro em liquidez agora, e o investidor compra
+                recibos com desconto esperando o retorno na data de liquidacao.
               </p>
               <div className="flex flex-col gap-4 sm:flex-row">
                 <Link
@@ -147,16 +100,6 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              {session ? (
-                <div className="mt-6 rounded-[1.35rem] border border-tertiary/15 bg-tertiary/10 p-5">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-tertiary">
-                    Sessao ativa
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-on-surface-variant">
-                    Sua conta ja foi criada. Continue direto no seu painel e conecte a wallet para operar onchain.
-                  </p>
-                </div>
-              ) : null}
             </div>
           </div>
         </section>
@@ -167,10 +110,10 @@ export default function Home() {
               CADA PERFIL TEM UM <span className="text-primary">FLUXO CLARO</span>
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-on-surface-variant">
-              A plataforma foi desenhada para os tres lados da transacao, e nao so para navegar em cards.
+              A plataforma foi desenhada para conectar hackers e investidores de forma direta e transparente.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2">
             {flowCards.map((card) => (
               <div
                 key={card.title}
@@ -226,11 +169,10 @@ export default function Home() {
               </div>
               <Chip tone="tertiary">Monad Testnet</Chip>
             </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-4">
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
               {[
                 ["Winner", "Create offer, acompanhar status, funding e liberacao"],
                 ["Investor", "Approve, buy, claim e quote da oferta"],
-                ["Admin", "Activate, reject, approve settle e liquidar"],
                 ["Marketplace", "Listagem onchain das offers disponiveis"],
               ].map(([title, text]) => (
                 <div key={title} className="rounded-2xl border border-white/6 bg-surface-container-highest/60 p-5">

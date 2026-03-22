@@ -1,19 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AppShell, AppSidebar, Chip, MetricCard, SectionHeading } from "@/components/kinetic";
+import { Chip, MetricCard, SectionHeading, TopNav } from "@/components/kinetic";
 import { ActionFeedback, EmptyState, OfferCard, WalletPanel } from "@/components/hackfi-panels";
 import { ProtectedRoute } from "@/components/auth-guard";
-import { getSession } from "@/lib/auth";
-import { formatAddress, useHackfi } from "@/hooks/use-hackfi";
+import { useHackfi } from "@/hooks/use-hackfi";
+import { parseBlockchainError, validateOfferForm, dateToTimestamp } from "@/lib/error-messages";
 
-const sideItems = [
-  { href: "/winner", label: "Painel", icon: "grid_view" },
-  { href: "/marketplace", label: "Premios ativos", icon: "military_tech" },
-  { href: "/winner", label: "Minhas ofertas", icon: "account_balance_wallet" },
-  { href: "/admin", label: "Governanca", icon: "gavel" },
-  { href: "/winner", label: "Configuracoes", icon: "settings" },
-];
+// Data padrão: 30 dias a partir de hoje
+const getDefaultDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+};
 
 const initialForm = {
   hackathonName: "Monad Hackathon",
@@ -21,16 +20,16 @@ const initialForm = {
   proofSeed: "proof-frontend-1",
   prizeAmount: "1000",
   discountBps: "1000",
-  expectedPaymentDate: String(Math.floor(Date.now() / 1000) + 2592000),
+  expectedPaymentDate: getDefaultDate(),
 };
 
 export default function WinnerPage() {
-  const session = getSession();
   const {
     account,
     connect,
     refresh,
     busy,
+    loading,
     tokenInfo,
     participantOffers,
     createOffer,
@@ -59,41 +58,49 @@ export default function WinnerPage() {
 
   async function handleCreateOffer() {
     try {
+      // Validar formulário
+      const validation = validateOfferForm(form);
+      if (!validation.valid) {
+        setHasError(true);
+        setFeedback(validation.error!);
+        return;
+      }
+
       setHasError(false);
       setFeedback("Criando oferta onchain...");
-      await createOffer(form);
-      setFeedback("Oferta criada com sucesso. Atualize ou aguarde a sincronizacao.");
+
+      // Converter data para timestamp Unix
+      const timestampInSeconds = dateToTimestamp(form.expectedPaymentDate);
+
+      await createOffer({
+        ...form,
+        expectedPaymentDate: String(timestampInSeconds),
+      });
+
+      setFeedback("Oferta criada com sucesso! Atualizando dados...");
     } catch (error) {
       setHasError(true);
-      setFeedback(error instanceof Error ? error.message : "Falha ao criar a oferta.");
+      setFeedback(parseBlockchainError(error));
     }
   }
 
   return (
-    <ProtectedRoute allowedRole="vencedor">
-      <AppShell
-        topActive="Ecossistema"
-        sidebar={
-          <AppSidebar
-            profileName={session?.name || "Vencedor"}
-            profileMeta={account ? formatAddress(account) : "wallet desconectada"}
-            items={sideItems}
-          />
-        }
-      >
-        <SectionHeading
-          title="Painel do vencedor"
-          subtitle="Crie antecipacoes reais, acompanhe a captacao de investidores e veja o valor liberado para sua wallet."
-          action={<Chip tone="tertiary">Fluxo onchain ativo</Chip>}
-        />
+    <ProtectedRoute>
+      <div className="min-h-screen bg-background text-foreground">
+        <TopNav active="Vencedor" />
+        <main className="mx-auto max-w-7xl px-6 pt-28 pb-20 md:px-8">
+          <div className="mx-auto max-w-[1280px] space-y-10">
+            <SectionHeading
+              title="Painel do vencedor"
+              subtitle="Crie antecipacoes reais, acompanhe a captacao de investidores e veja o valor liberado para sua wallet."
+              action={<Chip tone="tertiary">Fluxo onchain ativo</Chip>}
+            />
 
         <WalletPanel
           account={account}
           tokenBalance={tokenInfo?.balance}
           tokenSymbol={tokenInfo?.symbol}
           isAdminWallet={isAdminWallet}
-          onConnect={() => void connect()}
-          onRefresh={() => void refresh()}
         />
 
         <section className="grid gap-6 md:grid-cols-12">
@@ -123,6 +130,15 @@ export default function WinnerPage() {
           />
         </section>
 
+        {loading && (
+          <div className="rounded-2xl border border-white/8 bg-surface-container-low px-4 py-3 text-sm text-zinc-200">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              Carregando dados dos contratos...
+            </div>
+          </div>
+        )}
+
         <ActionFeedback message={busy ? "Executando transacao..." : feedback} error={hasError} />
 
         <section className="grid gap-8 xl:grid-cols-[1.05fr_1.35fr]">
@@ -138,12 +154,47 @@ export default function WinnerPage() {
             </p>
 
             <div className="mt-8 grid gap-5 md:grid-cols-2">
-              <Field label="Hackathon" value={form.hackathonName} onChange={(value) => setForm((current) => ({ ...current, hackathonName: value }))} />
-              <Field label="Simbolo" value={form.symbol} onChange={(value) => setForm((current) => ({ ...current, symbol: value }))} />
-              <Field label="Proof seed" value={form.proofSeed} onChange={(value) => setForm((current) => ({ ...current, proofSeed: value }))} />
-              <Field label="Valor do premio" value={form.prizeAmount} onChange={(value) => setForm((current) => ({ ...current, prizeAmount: value }))} />
-              <Field label="Desconto BPS" value={form.discountBps} onChange={(value) => setForm((current) => ({ ...current, discountBps: value }))} />
-              <Field label="Pagamento esperado" value={form.expectedPaymentDate} onChange={(value) => setForm((current) => ({ ...current, expectedPaymentDate: value }))} />
+              <Field
+                label="Hackathon"
+                value={form.hackathonName}
+                onChange={(value) => setForm((current) => ({ ...current, hackathonName: value }))}
+                placeholder="Nome do hackathon ou evento"
+              />
+              <Field
+                label="Simbolo do Recibo"
+                value={form.symbol}
+                onChange={(value) => setForm((current) => ({ ...current, symbol: value }))}
+                placeholder="Ex: MHACK, ETH2024"
+              />
+              <Field
+                label="Proof Seed"
+                value={form.proofSeed}
+                onChange={(value) => setForm((current) => ({ ...current, proofSeed: value }))}
+                placeholder="Hash ou identificador da prova"
+              />
+              <Field
+                label="Valor do Premio"
+                type="number"
+                value={form.prizeAmount}
+                onChange={(value) => setForm((current) => ({ ...current, prizeAmount: value }))}
+                placeholder="1000"
+                helper="Valor em tokens (hfUSD)"
+              />
+              <Field
+                label="Desconto (BPS)"
+                type="number"
+                value={form.discountBps}
+                onChange={(value) => setForm((current) => ({ ...current, discountBps: value }))}
+                placeholder="1000 = 10%"
+                helper="1000 BPS = 10%, 500 BPS = 5%"
+              />
+              <Field
+                label="Data de Pagamento Esperada"
+                type="date"
+                value={form.expectedPaymentDate}
+                onChange={(value) => setForm((current) => ({ ...current, expectedPaymentDate: value }))}
+                helper="Quando você espera receber o prêmio"
+              />
             </div>
 
             <button
@@ -172,7 +223,9 @@ export default function WinnerPage() {
             )}
           </div>
         </section>
-      </AppShell>
+          </div>
+        </main>
+      </div>
     </ProtectedRoute>
   );
 }
@@ -181,19 +234,32 @@ function Field({
   label,
   value,
   onChange,
+  type = "text",
+  placeholder,
+  helper,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  type?: "text" | "number" | "date";
+  placeholder?: string;
+  helper?: string;
 }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-white">{label}</span>
       <input
+        type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-[1.35rem] border border-white/8 bg-surface-container-lowest px-5 py-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-primary focus:ring-2 focus:ring-primary/35"
+        placeholder={placeholder}
+        min={type === "date" ? new Date().toISOString().split('T')[0] : undefined}
+        step={type === "number" ? "any" : undefined}
+        className="w-full rounded-[1.35rem] border border-white/8 bg-surface-container-lowest px-5 py-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-primary focus:ring-2 focus:ring-primary/35 [color-scheme:dark]"
       />
+      {helper && (
+        <p className="mt-1.5 text-xs text-zinc-500">{helper}</p>
+      )}
     </label>
   );
 }
