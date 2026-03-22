@@ -4,11 +4,9 @@ pragma solidity ^0.8.28;
 import "./PrizeOffer.sol";
 
 contract PrizeFactory {
-    error NotOwner();
     error InvalidAddress();
     error UnknownOffer();
 
-    address public owner;
     address public immutable paymentToken;
     address[] public allOffers;
 
@@ -16,20 +14,11 @@ contract PrizeFactory {
     mapping(address => address[]) public offersByParticipant;
 
     event OfferCreated(address indexed offer, address indexed participant, string hackathonName, string symbol);
-    event OfferActivated(address indexed offer);
-    event OfferRejected(address indexed offer);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
-        _;
-    }
+    event OfferSettled(address indexed offer, address indexed payer, uint256 amount);
 
     constructor(address paymentToken_) {
         if (paymentToken_ == address(0)) revert InvalidAddress();
-        owner = msg.sender;
         paymentToken = paymentToken_;
-        emit OwnershipTransferred(address(0), msg.sender);
     }
 
     function createOffer(
@@ -59,22 +48,10 @@ contract PrizeFactory {
         emit OfferCreated(offer, msg.sender, hackathonName, symbol);
     }
 
-    function activateOffer(address offer, bytes32 validationHash) external onlyOwner {
-        if (!isOffer[offer]) revert UnknownOffer();
-        PrizeOffer(offer).updateValidationHash(validationHash);
-        PrizeOffer(offer).activate();
-        emit OfferActivated(offer);
-    }
-
-    function rejectOffer(address offer) external onlyOwner {
-        if (!isOffer[offer]) revert UnknownOffer();
-        PrizeOffer(offer).reject();
-        emit OfferRejected(offer);
-    }
-
-    function settleOffer(address offer, uint256 amount) external onlyOwner {
+    function settleOffer(address offer, uint256 amount) external {
         if (!isOffer[offer]) revert UnknownOffer();
         PrizeOffer(offer).settle(msg.sender, amount);
+        emit OfferSettled(offer, msg.sender, amount);
     }
 
     function getParticipantOffers(address participant) external view returns (address[] memory) {
@@ -85,9 +62,4 @@ contract PrizeFactory {
         return allOffers.length;
     }
 
-    function transferOwnership(address newOwner) external onlyOwner {
-        if (newOwner == address(0)) revert InvalidAddress();
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
-    }
 }

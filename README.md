@@ -1,95 +1,72 @@
 # HackFi
 
-HackFi é uma plataforma de antecipação de prêmios para hackathons.
-
-A proposta é simples: vencedores não deveriam esperar semanas ou meses para receber um prêmio já conquistado. No HackFi, esse prêmio futuro vira um recebível fracionado onchain. O vencedor recebe liquidez antes, investidores compram frações com desconto, e o organizador valida e liquida o pagamento final.
+HackFi é uma plataforma de antecipação de premiação para hackathons construída na Monad. O prêmio futuro vira um recebível fracionado onchain: o vencedor recebe liquidez antes do pagamento oficial e o investidor financia esse valor com desconto.
 
 ## Membros
 
-Preencher com os nomes da equipe:
 - João Rubens Belluzo Neto
 - Marcus Felipe dos Santos Valente
 - Nicole Riedla Paiva Neves
 
 ## Problema
 
-Prêmios de hackathons frequentemente atrasam por burocracia operacional, revisão manual e fluxo de tesouraria. Isso cria um vazio entre:
-- quem já ganhou
-- quem ainda não recebeu
-- quem poderia financiar esse valor antecipadamente
+Prêmios de hackathons podem demorar semanas ou meses para serem pagos. Isso cria um intervalo entre ganhar e realmente receber.
 
 ## Solução
 
-HackFi cria uma infraestrutura onchain para antecipação de recebíveis:
-
-1. o vencedor registra o prêmio e cria uma antecipação
-2. o admin valida a prova do hackathon
-3. investidores compram frações do prêmio
-4. o contrato libera capital ao vencedor em tranches
-5. quando o prêmio real chega, o admin liquida a oferta
-6. investidores fazem `claim` do retorno proporcional
+1. o vencedor cria uma oferta com nome do hackathon, valor do prêmio, desconto e data prevista;
+2. investidores compram frações desse prêmio por meio de recibos onchain;
+3. o contrato libera micropagamentos ao vencedor em tranches de 5% conforme o funding avança;
+4. quando o valor final do prêmio é depositado, os investidores fazem `claim` do retorno proporcional.
 
 ## Personas
 
 ### Vencedor
-- registra o prêmio
-- cria a antecipação
-- acompanha funding e valor liberado
+
+- cria a antecipação;
+- acompanha o valor captado;
+- recebe liquidez progressiva na wallet.
 
 ### Investidor
-- visualiza ofertas
-- aprova `hfUSD`
-- compra recibos fracionados
-- acompanha saldo, quote e claim
 
-### Admin
-- valida ofertas
-- ativa ou rejeita oportunidades
-- aprova o settle
-- liquida o prêmio final
+- analisa oportunidades;
+- compra frações do prêmio com desconto;
+- acompanha os recibos e faz `claim` após a liquidação.
 
 ## Por que Monad
 
-HackFi combina com a Monad porque o produto depende de:
-- muitas leituras de estado
-- interações frequentes no frontend
-- pagamentos fracionados
-- boa UX para transações pequenas
+HackFi depende de leituras frequentes, compras fracionadas e micropagamentos. A Monad é adequada para esse fluxo por combinar compatibilidade EVM com baixo custo operacional.
 
 ## Arquitetura
 
-### Smart contracts
+### Contratos
 
-Arquivos principais:
-- [PrizeFactory.sol](contracts\src\PrizeFactory.sol)
-- [PrizeOffer.sol](contracts\src\PrizeOffer.sol)
-- [Token.sol](contracts\src\Token.sol)
-- [TestERC20.sol](contracts\src\TestERC20.sol)
+- [PrizeFactory.sol](C:\Users\Inteli\Documents\GitHub\blockchain\monad\HackFi\contracts\src\PrizeFactory.sol)
+- [PrizeOffer.sol](C:\Users\Inteli\Documents\GitHub\blockchain\monad\HackFi\contracts\src\PrizeOffer.sol)
+- [Token.sol](C:\Users\Inteli\Documents\GitHub\blockchain\monad\HackFi\contracts\src\Token.sol)
+- [TestERC20.sol](C:\Users\Inteli\Documents\GitHub\blockchain\monad\HackFi\contracts\src\TestERC20.sol)
 
 Responsabilidades:
-- `PrizeFactory`: cria, registra, ativa, rejeita e liquida ofertas
-- `PrizeOffer`: representa um prêmio específico e controla funding, tranches e claim
-- `Token`: recibo fracionado da oferta
-- `TestERC20`: token de pagamento de teste (`hfUSD`)
+
+- `PrizeFactory`: cria ofertas, registra o histórico do vencedor e encaminha a liquidação;
+- `PrizeOffer`: representa um prêmio específico e controla funding, tranches e `claim`;
+- `Token`: recibo fracionado da oferta;
+- `TestERC20`: token de pagamento de teste (`hfUSD`).
 
 ### Frontend
 
-Local:
-- [frontend](frontend)
+- [frontend](C:\Users\Inteli\Documents\GitHub\blockchain\monad\HackFi\frontend)
 
-Stack:
-- Next.js
-- React
-- Tailwind CSS
-- ethers v6
+O frontend atual já possui onboarding por perfil, proteção de rotas, persistência de sessão, persistência da wallet conectada e leitura onchain das ofertas.
 
-O frontend já possui:
-- onboarding por perfil
-- proteção de rotas
-- persistência de sessão
-- persistência da wallet conectada
-- dashboards separados para vencedor, investidor e admin
-- marketplace com leitura onchain
+## Fluxo onchain atual
+
+- A offer nasce ativa no momento da criação.
+- Não existe etapa de aprovação administrativa.
+- O desconto aceito onchain vai de `5%` a `15%`.
+- O investidor compra recibos proporcionais ao prêmio.
+- O vencedor recebe o valor captado em tranches automáticas de `5%`.
+- Qualquer pagador pode liquidar a oferta depositando o valor final via factory.
 
 ## Deploy atual na Monad Testnet
 
@@ -107,27 +84,24 @@ npm install
 npm run dev
 ```
 
-Aplicação local:
-- `http://localhost:3000`
-
 ### Contratos
 
 ```bash
 cd contracts
 npm install
-npm run build
+npx hardhat build
 ```
 
 ### Deploy na testnet
 
-No diretório `contracts`, criar `.env` com:
+No diretório `contracts`, crie um `.env` com:
 
 ```env
 PRIVATE_KEY=0xSUA_CHAVE_PRIVADA
 PAYMENT_TOKEN_ADDRESS=0xENDERECO_DO_ERC20
 ```
 
-Depois:
+Depois execute:
 
 ```bash
 npm run deploy:test-token
@@ -136,34 +110,28 @@ npm run deploy:testnet
 
 ## Fluxo de demo
 
-1. abrir `/cadastro`
-2. escolher o perfil
-3. criar a conta
-4. conectar a wallet na Monad testnet
+1. abrir `/cadastro`;
+2. escolher o perfil;
+3. criar a conta;
+4. conectar a wallet na Monad Testnet;
 5. testar:
-   - vencedor: criar antecipação
-   - investidor: mintar `hfUSD`, aprovar e comprar
-   - admin: ativar, rejeitar ou liquidar
+   - vencedor: criar antecipação;
+   - investidor: mintar `hfUSD`, aprovar e comprar;
+   - qualquer pagador: liquidar a oferta;
+   - investidor: executar `claim`.
 
-## O que já funciona no MVP
+## MVP
 
-- criação de conta por perfil
-- proteção de rotas por role
-- logout do app
-- criação de ofertas
-- leitura das offers da testnet
-- fluxo de `approve`, `buy`, `claim`, `activate`, `reject` e `settle` na interface
+Já funciona:
 
-## Limitações atuais
+- criação de conta por perfil;
+- criação de ofertas;
+- leitura das offers da testnet;
+- fluxo de `approve`, `buy`, `claim` e `settle`;
+- micropagamentos automáticos para o vencedor.
 
-- autenticação ainda é local ao navegador
-- anexos e comprovantes ainda não estão integrados a um backend real
-- `TestERC20` é usado para demonstração
-- o fluxo completo depende de MetaMask e wallet com permissão correta
+Limitações atuais:
 
-## Próximos passos
-
-- integrar backend real para provas e links
-- substituir autenticação local por auth persistente
-- suportar token de pagamento real na rede
-- melhorar analytics e histórico de operações
+- autenticação local ao navegador;
+- `TestERC20` usado para demonstração;
+- anexos e comprovantes ainda fora de um backend real.

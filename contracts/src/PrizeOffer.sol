@@ -20,9 +20,7 @@ contract PrizeOffer {
     error NothingToClaim();
 
     enum Status {
-        Pending,
         Active,
-        Rejected,
         Funded,
         Settled,
         Cancelled
@@ -56,9 +54,6 @@ contract PrizeOffer {
 
     mapping(address => uint256) public claimablePerReceiptPaid;
 
-    event Activated(address indexed offer);
-    event Rejected(address indexed offer);
-    event ValidationHashUpdated(bytes32 validationHash);
     event ReceiptsPurchased(address indexed buyer, uint256 receiptAmount, uint256 paymentAmount);
     event ParticipantPaid(address indexed participant, uint256 amount, uint256 releasedTranches);
     event Settled(address indexed payer, uint256 amount);
@@ -93,7 +88,7 @@ contract PrizeOffer {
         discountBps = discountBps_;
         fundingTarget = (prizeAmount_ * (BPS - discountBps_)) / BPS;
         expectedPaymentDate = expectedPaymentDate_;
-        status = Status.Pending;
+        status = Status.Active;
 
         receiptToken = new Token(
             string.concat("Prize Receipt ", hackathonName_),
@@ -101,23 +96,6 @@ contract PrizeOffer {
             IERC20Like(paymentToken_).decimals(),
             address(this)
         );
-    }
-
-    function activate() external onlyFactory {
-        if (status != Status.Pending) revert InvalidState();
-        status = Status.Active;
-        emit Activated(address(this));
-    }
-
-    function reject() external onlyFactory {
-        if (status != Status.Pending) revert InvalidState();
-        status = Status.Rejected;
-        emit Rejected(address(this));
-    }
-
-    function updateValidationHash(bytes32 newValidationHash) external onlyFactory {
-        validationHash = newValidationHash;
-        emit ValidationHashUpdated(newValidationHash);
     }
 
     function buy(uint256 receiptAmount) external {
