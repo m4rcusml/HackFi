@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-037e3eff10157a215df5b5ce58b3cef98ad40197",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "src/TestERC20.sol": "project/src/TestERC20.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/src/TestERC20.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract TestERC20 {\n    error InvalidAddress();\n    error InsufficientBalance();\n    error InsufficientAllowance();\n\n    string public name;\n    string public symbol;\n    uint8 public immutable decimals;\n    uint256 public totalSupply;\n    address public owner;\n\n    mapping(address => uint256) public balanceOf;\n    mapping(address => mapping(address => uint256)) public allowance;\n\n    event Transfer(address indexed from, address indexed to, uint256 value);\n    event Approval(address indexed owner, address indexed spender, uint256 value);\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"NOT_OWNER\");\n        _;\n    }\n\n    constructor(string memory name_, string memory symbol_, uint8 decimals_) {\n        name = name_;\n        symbol = symbol_;\n        decimals = decimals_;\n        owner = msg.sender;\n    }\n\n    function mint(address to, uint256 value) external onlyOwner {\n        if (to == address(0)) revert InvalidAddress();\n\n        totalSupply += value;\n        balanceOf[to] += value;\n\n        emit Transfer(address(0), to, value);\n    }\n\n    function approve(address spender, uint256 value) external returns (bool) {\n        allowance[msg.sender][spender] = value;\n        emit Approval(msg.sender, spender, value);\n        return true;\n    }\n\n    function transfer(address to, uint256 value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint256 value) external returns (bool) {\n        uint256 allowed = allowance[from][msg.sender];\n        if (allowed < value) revert InsufficientAllowance();\n\n        unchecked {\n            allowance[from][msg.sender] = allowed - value;\n        }\n\n        _transfer(from, to, value);\n        return true;\n    }\n\n    function transferOwnership(address newOwner) external onlyOwner {\n        if (newOwner == address(0)) revert InvalidAddress();\n        owner = newOwner;\n    }\n\n    function _transfer(address from, address to, uint256 value) internal {\n        if (to == address(0)) revert InvalidAddress();\n        if (balanceOf[from] < value) revert InsufficientBalance();\n\n        unchecked {\n            balanceOf[from] -= value;\n            balanceOf[to] += value;\n        }\n\n        emit Transfer(from, to, value);\n    }\n}\n"
+      }
+    }
+  }
+}

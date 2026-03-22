@@ -1,0 +1,31 @@
+{
+  "name": "hackfi",
+  "version": "1.0.0",
+  "description": "HackFi smart contracts",
+  "scripts": {
+    "build": "hardhat build",
+    "clean": "hardhat clean",
+    "test": "hardhat test",
+    "deploy:test-token": "hardhat ignition deploy ignition/modules/TestERC20.js --network monadTestnet",
+    "deploy:test-token:reset": "hardhat ignition deploy ignition/modules/TestERC20.js --network monadTestnet --reset",
+    "deploy:testnet": "hardhat ignition deploy ignition/modules/PrizeFactory.js --network monadTestnet",
+    "deploy:testnet:reset": "hardhat ignition deploy ignition/modules/PrizeFactory.js --network monadTestnet --reset"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/m4rcusml/HackFi.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
+    "dotenv": "^16.6.1",
+    "hardhat": "^3.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/m4rcusml/HackFi/issues"
+  },
+  "homepage": "https://github.com/m4rcusml/HackFi#readme"
+}
