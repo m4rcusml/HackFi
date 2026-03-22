@@ -25,16 +25,16 @@ export function Brand() {
 
 export function TopNav({
   active,
-  actionLabel = "Connect Wallet",
+  actionLabel = "Conectar carteira",
 }: {
   active?: string;
   actionLabel?: string;
 }) {
   const items: NavItem[] = [
-    { href: "/", label: "Ecosystem" },
-    { href: "/marketplace", label: "Prizes" },
-    { href: "/investor", label: "Investors" },
-    { href: "/admin", label: "Docs" },
+    { href: "/", label: "Ecossistema" },
+    { href: "/marketplace", label: "Premios" },
+    { href: "/investor", label: "Investidores" },
+    { href: "/admin", label: "Administracao" },
   ];
 
   return (
@@ -63,7 +63,7 @@ export function TopNav({
             href="/"
             className="hidden text-sm font-medium text-on-surface transition-colors hover:text-primary sm:inline-flex"
           >
-            Sign In
+            Entrar
           </Link>
           <Link
             href="/marketplace"
@@ -78,7 +78,7 @@ export function TopNav({
 }
 
 export function Footer() {
-  const links = ["Privacy", "Terms", "Security", "Status"];
+  const links = ["Privacidade", "Termos", "Seguranca", "Status"];
 
   return (
     <footer className="border-t border-white/5 bg-[#131313] py-12">
@@ -94,7 +94,7 @@ export function Footer() {
           ))}
         </div>
         <p className="border-t border-white/5 pt-6 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-700">
-          © 2024 MONAD KINETIC. Built for the Void.
+          2024 MONAD KINETIC. Construido para o vazio.
         </p>
       </div>
     </footer>
@@ -114,7 +114,7 @@ export function AppSidebar({
     <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r border-white/5 bg-[#131313] pt-24 pb-8 lg:flex">
       <div className="mb-8 flex items-center gap-3 px-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400">
-          <span className="material-symbols-outlined">person</span>
+          <Icon name="person" className="h-5 w-5" />
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-white">{profileName}</p>
@@ -132,14 +132,14 @@ export function AppSidebar({
                 : "flex items-center gap-3 px-6 py-3 text-sm font-medium text-zinc-500 transition-all hover:translate-x-1 hover:bg-white/5 hover:text-zinc-200"
             }
           >
-            <span className="material-symbols-outlined text-lg">{item.icon}</span>
+            <Icon name={item.icon} className="h-[18px] w-[18px]" />
             {item.label}
           </Link>
         ))}
       </nav>
       <div className="px-6">
         <button className="kinetic-gradient w-full rounded-xl py-3 text-xs font-bold uppercase tracking-[0.2em] text-white transition-transform active:scale-95">
-          Claim Rewards
+          Resgatar recompensas
         </button>
       </div>
     </aside>
@@ -182,7 +182,9 @@ export function SectionHeading({
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-2 text-sm text-on-surface-variant">{subtitle}</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-on-surface-variant">
+            {subtitle}
+          </p>
         ) : null}
       </div>
       {action}
@@ -208,14 +210,16 @@ export function MetricCard({
   return (
     <div className={`glass-panel kinetic-border rounded-3xl p-6 ${className}`}>
       {icon ? (
-        <span className="material-symbols-outlined mb-4 inline-flex text-2xl text-primary">
-          {icon}
+        <span className="mb-4 inline-flex text-primary">
+          <Icon name={icon} className="h-6 w-6" />
         </span>
       ) : null}
       <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
         {label}
       </p>
-      <h3 className="mt-2 font-headline text-3xl font-black text-white">{value}</h3>
+      <h3 className="mt-2 break-words font-headline text-3xl font-black text-white">
+        {value}
+      </h3>
       {accent ? <p className="mt-3 font-mono text-sm text-tertiary">{accent}</p> : null}
       {detail ? <p className="mt-1 text-xs text-zinc-500">{detail}</p> : null}
     </div>
@@ -243,4 +247,79 @@ export function Chip({
       {children}
     </span>
   );
+}
+
+export function Icon({
+  name,
+  className = "h-5 w-5",
+}: {
+  name: string;
+  className?: string;
+}) {
+  const props = {
+    className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "person":
+      return <svg {...props}><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /><path d="M4 20a8 8 0 0 1 16 0" /></svg>;
+    case "monitoring":
+    case "query_stats":
+      return <svg {...props}><path d="M4 19h16" /><path d="m6 15 4-4 3 3 5-6" /></svg>;
+    case "military_tech":
+    case "workspace_premium":
+    case "emoji_events":
+    case "trophy":
+      return <svg {...props}><path d="M8 4h8v3a4 4 0 0 1-8 0V4Z" /><path d="M6 6H4a2 2 0 0 0 2 2" /><path d="M18 6h2a2 2 0 0 1-2 2" /><path d="M12 11v4" /><path d="M9 21h6" /><path d="M10 17h4" /></svg>;
+    case "admin_panel_settings":
+      return <svg {...props}><path d="M12 3 5 6v5c0 5 3.5 8 7 10 3.5-2 7-5 7-10V6l-7-3Z" /><path d="M9.5 12.5 11 14l3.5-3.5" /></svg>;
+    case "check_circle":
+    case "verified":
+    case "check":
+      return <svg {...props}><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.3 2.3 4.7-5" /></svg>;
+    case "search":
+      return <svg {...props}><circle cx="11" cy="11" r="6" /><path d="m20 20-4.2-4.2" /></svg>;
+    case "grid_view":
+      return <svg {...props}><rect x="4" y="4" width="6" height="6" /><rect x="14" y="4" width="6" height="6" /><rect x="4" y="14" width="6" height="6" /><rect x="14" y="14" width="6" height="6" /></svg>;
+    case "account_balance_wallet":
+    case "account_balance":
+      return <svg {...props}><path d="M3 7h15a3 3 0 0 1 3 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /><path d="M3 9V7a2 2 0 0 1 2-2h11" /><circle cx="17" cy="13" r="1" /></svg>;
+    case "gavel":
+      return <svg {...props}><path d="m14 6 4 4" /><path d="m12 8 4 4" /><path d="m3 21 8-8" /><path d="m9 5 10 10" /></svg>;
+    case "settings":
+      return <svg {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z" /></svg>;
+    case "layers":
+      return <svg {...props}><path d="m12 4 8 4-8 4-8-4 8-4Z" /><path d="m4 12 8 4 8-4" /><path d="m4 16 8 4 8-4" /></svg>;
+    case "bolt":
+      return <svg {...props}><path d="M13 2 6 13h5l-1 9 8-12h-5V2Z" /></svg>;
+    case "info":
+      return <svg {...props}><circle cx="12" cy="12" r="9" /><path d="M12 10v6" /><path d="M12 7h.01" /></svg>;
+    case "warning":
+      return <svg {...props}><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>;
+    case "token":
+      return <svg {...props}><circle cx="12" cy="12" r="8" /><path d="M9 9h6v6H9z" /></svg>;
+    case "tune":
+      return <svg {...props}><path d="M4 6h8" /><path d="M16 6h4" /><circle cx="14" cy="6" r="2" /><path d="M4 12h4" /><path d="M12 12h8" /><circle cx="10" cy="12" r="2" /><path d="M4 18h10" /><path d="M18 18h2" /><circle cx="16" cy="18" r="2" /></svg>;
+    case "open_in_new":
+      return <svg {...props}><path d="M14 4h6v6" /><path d="M10 14 20 4" /><path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4" /></svg>;
+    case "shopping_cart":
+      return <svg {...props}><circle cx="9" cy="20" r="1" /><circle cx="17" cy="20" r="1" /><path d="M5 5h2l2.2 9.2a1 1 0 0 0 1 .8h7.9a1 1 0 0 0 1-.8L21 8H8" /></svg>;
+    case "rocket_launch":
+      return <svg {...props}><path d="M5 19c2-4 5-6 8-8 2-2 4-5 4-8-3 0-6 2-8 4-2 3-4 6-8 8l4 4Z" /><path d="M9 15 5 19" /><path d="M13 11l4 4" /></svg>;
+    case "group":
+      return <svg {...props}><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M4 19a5 5 0 0 1 10 0" /><path d="M14 19a4 4 0 0 1 6 0" /></svg>;
+    case "route":
+      return <svg {...props}><circle cx="6" cy="6" r="2" /><circle cx="18" cy="18" r="2" /><path d="M8 6h4a4 4 0 0 1 4 4v4" /></svg>;
+    case "payments":
+      return <svg {...props}><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 12h10" /><path d="M7 9h3" /></svg>;
+    default:
+      return <svg {...props}><circle cx="12" cy="12" r="8" /></svg>;
+  }
 }

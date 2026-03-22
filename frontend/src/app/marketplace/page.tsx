@@ -1,14 +1,14 @@
-import { Footer, TopNav } from "@/components/kinetic";
+import { Footer, Icon, TopNav } from "@/components/kinetic";
 
 const cards = [
-  ["Zk-Rollup Liquidity Engine", "On-Chain", "ETH Global Paris", "$15,000", "18.2%", "45 Days", 80, "tertiary"],
-  ["Yield Aggregator v3", "Verified", "Polygon Guild", "$8,500", "14.5%", "12 Days", 45, "primary"],
-  ["Carbon Credit DAO", "Docs Verified", "Chainlink Spring", "$12,000", "9.8%", "88 Days", 92, "secondary"],
-  ["Cross-Chain NFT Bridge", "Unverified", "Open Track Hack", "$5,000", "22.0%", "120 Days", 15, "default"],
-  ["Metaverse Social Layer", "Verified", "Monad", "$6,000", "14.0%", "36 Days", 66, "primary"],
-  ["AI Agent Hub", "Verified", "Base", "$9,500", "16.5%", "28 Days", 24, "primary"],
-  ["Solar Credits Exchange", "Docs Verified", "Eco Fund", "$11,000", "8.2%", "64 Days", 84, "secondary"],
-  ["Liquidity Router X", "On-Chain", "Nexus", "$13,000", "19.1%", "21 Days", 52, "tertiary"],
+  ["Motor de Liquidez ZK Rollup", "On-chain", "ETH Global Paris", "$15.000", "18,2%", "45 dias", 80, "tertiary"],
+  ["Yield Aggregator v3", "Verificado", "Polygon Guild", "$8.500", "14,5%", "12 dias", 45, "primary"],
+  ["Carbon Credit DAO", "Docs verificados", "Chainlink Spring", "$12.000", "9,8%", "88 dias", 92, "secondary"],
+  ["Bridge NFT Cross-chain", "Nao verificado", "Open Track Hack", "$5.000", "22,0%", "120 dias", 15, "default"],
+  ["Camada Social do Metaverso", "Verificado", "Monad", "$6.000", "14,0%", "36 dias", 66, "primary"],
+  ["Hub de Agentes IA", "Verificado", "Base", "$9.500", "16,5%", "28 dias", 24, "primary"],
+  ["Bolsa de Creditos Solares", "Docs verificados", "Eco Fund", "$11.000", "8,2%", "64 dias", 84, "secondary"],
+  ["Liquidity Router X", "On-chain", "Nexus", "$13.000", "19,1%", "21 dias", 52, "tertiary"],
 ] as const;
 
 const toneClasses: Record<string, string> = {
@@ -21,7 +21,7 @@ const toneClasses: Record<string, string> = {
 export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <TopNav active="Prizes" />
+      <TopNav active="Prêmios" />
       <main className="mx-auto max-w-7xl px-6 pt-28 pb-20 md:px-8">
         <section className="mb-12 space-y-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -30,25 +30,25 @@ export default function MarketplacePage() {
                 Marketplace
               </h1>
               <p className="mt-2 text-sm text-on-surface-variant">
-                Discover and trade prize pool liquidity across the ecosystem.
+                Descubra e negocie liquidez de pools de prêmios em todo o ecossistema.
               </p>
             </div>
-            <div className="flex gap-4">
-              <Stat title="Total Vol" value="$450k" />
-              <Stat title="Avg ROI" value="12.5%" accent />
+            <div className="flex flex-wrap gap-4">
+              <Stat title="Volume total" value="$450 mil" />
+              <Stat title="ROI medio" value="12,5%" accent />
             </div>
           </div>
           <div className="glass-panel kinetic-border flex flex-wrap items-center gap-4 rounded-[2rem] p-4">
             <div className="relative min-w-[280px] flex-1">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">
-                search
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-outline">
+                <Icon name="search" className="h-5 w-5" />
               </span>
               <input
                 className="w-full rounded-2xl bg-surface-container-lowest py-3 pr-4 pl-12 text-sm outline-none placeholder:text-outline/50"
-                placeholder="Search projects or hackathons..."
+                placeholder="Buscar projetos ou hackathons..."
               />
             </div>
-            {["Category: All", "Hackathon: All", "ROI: High to Low"].map((item) => (
+            {["Categoria: todas", "Hackathon: todos", "ROI: maior para menor"].map((item) => (
               <div
                 key={item}
                 className="rounded-2xl bg-surface-container-highest px-4 py-3 text-xs font-bold uppercase tracking-[0.2em]"
@@ -57,7 +57,7 @@ export default function MarketplacePage() {
               </div>
             ))}
             <button className="rounded-2xl bg-surface-container-high p-3 transition-colors hover:bg-surface-bright">
-              <span className="material-symbols-outlined">tune</span>
+              <Icon name="tune" className="h-5 w-5" />
             </button>
           </div>
         </section>
@@ -84,19 +84,19 @@ export default function MarketplacePage() {
                 </div>
                 <div className="absolute bottom-4 left-4">
                   <p className="font-bold text-white">{brand}</p>
-                  <p className="text-xs text-white/70">Curated opportunity</p>
+                  <p className="text-xs text-white/70">Oportunidade curada</p>
                 </div>
               </div>
               <div className="p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="font-headline text-lg font-bold text-white">{title}</h2>
-                  <span className="material-symbols-outlined text-outline text-sm">
-                    open_in_new
-                  </span>
+                  <h2 className="font-headline text-lg leading-6 font-bold text-white">
+                    {title}
+                  </h2>
+                  <Icon name="open_in_new" className="mt-1 h-4 w-4 shrink-0 text-outline" />
                 </div>
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-outline">
-                    <span>Progress</span>
+                    <span>Progresso</span>
                     <span className="text-white">{progress}%</span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-surface-container-highest">
@@ -115,17 +115,15 @@ export default function MarketplacePage() {
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-4 border-y border-white/8 py-4">
-                  <DetailBlock label="Target" value={target} />
-                  <DetailBlock label="Expected ROI" value={roi} accent />
+                  <DetailBlock label="Meta" value={target} />
+                  <DetailBlock label="ROI esperado" value={roi} accent />
                 </div>
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-4 flex items-center justify-between gap-3">
                   <p className="text-xs text-outline-variant">
-                    Payout in <span className="font-bold text-white">{payout}</span>
+                    Pagamento em <span className="font-bold text-white">{payout}</span>
                   </p>
                   <button className="rounded-xl bg-surface-container-highest p-2 transition-colors hover:bg-tertiary hover:text-on-tertiary">
-                    <span className="material-symbols-outlined text-sm">
-                      shopping_cart
-                    </span>
+                    <Icon name="shopping_cart" className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -173,7 +171,7 @@ function DetailBlock({
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-outline">
         {label}
       </p>
-      <p className={`mt-1 text-sm font-bold ${accent ? "text-tertiary" : "text-white"}`}>
+      <p className={`mt-1 break-words text-sm font-bold ${accent ? "text-tertiary" : "text-white"}`}>
         {value}
       </p>
     </div>

@@ -2,68 +2,69 @@ import {
   AppShell,
   AppSidebar,
   Chip,
+  Icon,
   MetricCard,
   SectionHeading,
 } from "@/components/kinetic";
 
 const sideItems = [
-  { href: "/admin", label: "Dashboard", icon: "grid_view" },
-  { href: "/marketplace", label: "Active Prizes", icon: "military_tech" },
-  { href: "/investor", label: "Yield Vaults", icon: "account_balance_wallet" },
-  { href: "/admin", label: "Governance", icon: "gavel" },
-  { href: "/winner", label: "Settings", icon: "settings" },
+  { href: "/admin", label: "Painel", icon: "grid_view" },
+  { href: "/marketplace", label: "Prêmios ativos", icon: "military_tech" },
+  { href: "/investor", label: "Vaults de yield", icon: "account_balance_wallet" },
+  { href: "/admin", label: "Governanca", icon: "gavel" },
+  { href: "/winner", label: "Configuracoes", icon: "settings" },
 ];
 
 const winners = [
   {
     name: "HyperLend Protocol",
     wallet: "0x71C...123a",
-    category: "1st Place - DeFi",
-    prize: "$10,000",
+    category: "1o lugar - DeFi",
+    prize: "$10.000",
     status: "Autorizado",
     button: "Emitir NFT",
   },
   {
     name: "Quantum Vaults",
     wallet: "0x3fA...B9e2",
-    category: "Finalist - Infra",
-    prize: "$5,000",
-    status: "Pending",
-    button: "Ver Detalhes",
+    category: "Finalista - Infra",
+    prize: "$5.000",
+    status: "Pendente",
+    button: "Ver detalhes",
   },
 ];
 
 export default function AdminPage() {
   return (
     <AppShell
-      topActive="Docs"
+      topActive="Administracao"
       sidebar={
         <AppSidebar
-          profileName="Kinetic Operator"
+          profileName="Operador Kinetic"
           profileMeta="0x71C...39A2"
           items={sideItems}
         />
       }
     >
       <SectionHeading
-        title="Admin Dashboard"
-        subtitle="Monitor winner verification, prize emission, and escrow release states."
+        title="Painel administrativo"
+        subtitle="Monitore a verificacao dos vencedores, a emissao dos premios e os estados de liberacao em escrow."
       />
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Prizes" value="$2.5M" accent="+12%" />
-        <MetricCard label="Winners" value="45" />
-        <MetricCard label="Active Trials" value="12" />
-        <MetricCard label="Total Yielded" value="$1.1M" />
+        <MetricCard label="Total em prêmios" value="$2,5M" accent="+12%" />
+        <MetricCard label="Vencedores" value="45" />
+        <MetricCard label="Rodadas ativas" value="12" />
+        <MetricCard label="Total liquidado" value="$1,1M" />
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <h2 className="font-headline text-2xl font-black uppercase italic">
-            Vencedores Registrados
+            Vencedores registrados
           </h2>
           <div className="rounded-2xl bg-surface-container-low px-4 py-2 text-xs text-zinc-400">
-            All Categories
+            Todas as categorias
           </div>
         </div>
         <div className="overflow-hidden rounded-[2rem] border border-white/5 bg-surface-container-lowest">
@@ -72,7 +73,7 @@ export default function AdminPage() {
             <span>Categoria</span>
             <span className="text-right">Prêmio</span>
             <span className="text-center">Status NFT</span>
-            <span className="text-right">Ações</span>
+            <span className="text-right">Acoes</span>
           </div>
           {winners.map((winner, index) => (
             <div
@@ -81,9 +82,10 @@ export default function AdminPage() {
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-800 text-purple-400">
-                  <span className="material-symbols-outlined text-sm">
-                    {index === 0 ? "workspace_premium" : "token"}
-                  </span>
+                  <Icon
+                    name={index === 0 ? "workspace_premium" : "token"}
+                    className="h-4 w-4"
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-bold text-white">{winner.name}</p>
@@ -117,38 +119,38 @@ export default function AdminPage() {
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="font-headline text-2xl font-black uppercase italic">
-              Pagamentos de Prêmios
+              Pagamentos de prêmios
             </h2>
             <p className="mt-1 text-xs text-zinc-500">
-              Status de liberações via smart contract
+              Status das liberacoes via smart contract
             </p>
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-red-400/20 bg-red-950/30 px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-red-300">
-            <span className="material-symbols-outlined text-sm">warning</span>
-            Depósito obrigatório no escrow antes da emissão
+            <Icon name="warning" className="h-4 w-4" />
+            Deposito obrigatorio no escrow antes da emissao
           </div>
         </div>
         <div className="rounded-[1.5rem] border border-white/5 bg-surface-container-lowest p-6">
           <div className="grid gap-4 md:grid-cols-4 md:items-center">
             <div>
               <p className="text-sm font-bold text-white">HyperLend Protocol</p>
-              <p className="font-mono text-[10px] text-zinc-500">Vencimento: 15 Dias</p>
+              <p className="font-mono text-[10px] text-zinc-500">Vencimento: 15 dias</p>
             </div>
             <div className="md:text-center">
-              <p className="font-mono text-sm text-white">$10,000</p>
+              <p className="font-mono text-sm text-white">$10.000</p>
               <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">
                 Valor do prêmio
               </p>
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                Contrato Escrow
+                Contrato escrow
               </p>
               <p className="mt-1 font-mono text-xs text-zinc-400">0xAbC123...890</p>
             </div>
             <div className="md:text-right">
               <button className="rounded-xl bg-tertiary-container px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-on-tertiary-container transition-colors hover:bg-tertiary">
-                Confirmar Pagamento
+                Confirmar pagamento
               </button>
             </div>
           </div>
